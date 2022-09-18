@@ -93,13 +93,13 @@ namespace Chess
             Console.ForegroundColor = ConsoleColor.White;
         }
 
-        public static void PrintScorePlayer1()
+        /* public static void PrintScorePlayer1()
         {
             Console.ForegroundColor = ConsoleColor.Cyan;
             Console.Write("\nCaptured: ");
             int score = 0;
 
-            foreach (Piece piece in GameManager.CapturedPieces1)
+            foreach (Piece piece in GameManager.CapturedPieces)
             {
                 PrintPiece(piece);
                 Console.Write(" ");
@@ -127,6 +127,6 @@ namespace Chess
             Console.ForegroundColor = ConsoleColor.Red;
             Console.Write("\nScore: " + score + "\n\n");
             Console.ForegroundColor= ConsoleColor.White;
-        }
+        }*/
     }
 }

@@ -12,6 +12,7 @@ namespace Chess
         public override int Value { get; protected set; }
         public override string Symbol { get; protected set;  }
         public override string Type { get; protected set; }
+        public (int, int) Position { get; protected set; }
         public new int Player { get; protected set;  }
         public override bool HasNotMoved { get; protected set; }
         public bool IsInCheck { get; protected set; }
@@ -40,6 +41,7 @@ namespace Chess
                 || (Math.Abs(newPos.Item1 - curPos.Item1) == Math.Abs(newPos.Item2 - curPos.Item2)
                 && Math.Abs(newPos.Item1 - curPos.Item1) == 1))
             {
+                if (!GameManager.IsReachable(Player, newPos))
                     return true;
             }
 
@@ -55,12 +57,19 @@ namespace Chess
                                     for (int i = 1; i < 4; i++)
                                         if (GameManager.Board[newPos.Item1][i] != null)
                                             return false;
+
+                                    if (GameManager.IsReachable(Player, (newPos.Item1, 2)))
+                                        return false;
                                 }
+
                                 else if (newPos.Item2 == 7)
                                 {
                                     for (int i = 5; i < 7; i++)
                                         if (GameManager.Board[newPos.Item1][i] != null)
                                             return false;
+
+                                    if (GameManager.IsReachable(Player, (newPos.Item1, 6)))
+                                        return false;
                                 }
 
                                 return true;
@@ -82,6 +91,11 @@ namespace Chess
         public override void FalsifyHasNotMoved()
         {
             HasNotMoved = false;
+        }
+
+        public void UpdatePosition((int, int) position)
+        {
+            Position = position;
         }
     }
 }

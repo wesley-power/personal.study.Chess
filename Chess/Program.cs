@@ -17,9 +17,7 @@ namespace Chess
             while (gameActive)
             {
                 Console.Clear();
-                View.PrintScorePlayer2();
                 View.PrintBoard();
-                View.PrintScorePlayer1();
 
                 Console.WriteLine("TURN " + GameManager.Turn);
 
