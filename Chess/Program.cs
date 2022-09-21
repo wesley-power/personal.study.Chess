@@ -17,7 +17,14 @@ namespace Chess
             while (gameActive)
             {
                 Console.Clear();
+
+                (int First, int Second) = (GameManager.Turn % 2 == 1) ? (2, 1) : (1, 2);
+
+                View.PrintCapturedDisplay(First);
+
                 View.PrintBoard();
+
+                View.PrintCapturedDisplay(Second);
 
                 Console.WriteLine("TURN " + GameManager.Turn);
 
@@ -37,14 +44,19 @@ namespace Chess
 
 
                 Console.Write("Enter position of piece to move: ");
-                (int, int) firstPos = ConvertToCoordinates();
+                (int Row, int Col) firstPos = ConvertToCoordinates();
 
                 Console.Write("Enter the position to move the piece to: ");
-                (int, int) secondPos = ConvertToCoordinates();
+                (int Row, int Col) secondPos = ConvertToCoordinates();
 
-                if (GameManager.Board[firstPos.Item1][firstPos.Item2] != null)
-                    if (GameManager.Board[firstPos.Item1][firstPos.Item2].IsValidMove(firstPos, secondPos))
-                        GameManager.UpdateBoard(firstPos, secondPos);
+                if (GameManager.Board[firstPos.Row][firstPos.Col] != null)
+                    if (GameManager.Board[firstPos.Row][firstPos.Col].IsValidMove(firstPos, secondPos) && GameManager.IsValidPiece(firstPos))
+                    {
+                        GameManager.UpdateBoard(firstPos, secondPos, false);
+                        GameManager.EvaluateCheck();
+                        if (GameManager.IsDraw())
+                            GameManager.Draw();
+                    }
             }
         }
 

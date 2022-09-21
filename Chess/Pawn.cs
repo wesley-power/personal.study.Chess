@@ -15,7 +15,10 @@ namespace Chess
         public new int Player { get; protected set; }
         public override bool HasNotMoved { get; protected set; }
         public Piece PawnGhost { get; protected set; }
-
+        
+        // Fields
+        public static readonly (int RowMove, int ColMove)[] pawnMoves = new (int RowMove, int ColMove)[]
+        { (1, -1), (1, 0), (1, -1) };
 
         // Constructor
         public Pawn(int player) : base(player)
@@ -28,30 +31,55 @@ namespace Chess
         }
 
         // Methods
-        public override bool IsValidMove((int, int) curPos, (int, int) newPos)
+        public override bool IsValidMove((int Row, int Col) curPos, (int Row, int Col) newPos)
         {
             if (GameManager.IsUniversalInvalidMove(curPos, newPos))
                 return false;
 
             int direction = (this.Player == 1) ? 1 : -1;
 
-            if ((HasNotMoved && (direction * (newPos.Item1 - curPos.Item1)) == 2 && newPos.Item2 == curPos.Item2))
+            if ((HasNotMoved && (direction * (newPos.Row - curPos.Row)) == 2 && newPos.Col == curPos.Col))
             {
-                if (GameManager.Board[newPos.Item1][newPos.Item2] == null
-                    && GameManager.Board[newPos.Item1 - (direction * 1)][newPos.Item2] == null)
+                if (GameManager.Board[newPos.Row][newPos.Col] == null
+                    && GameManager.Board[newPos.Row - (direction * 1)][newPos.Col] == null)
                 {
                     return true;
                 }
             }
-            else if ((direction * (newPos.Item1 - curPos.Item1)) == 1 && newPos.Item2 == curPos.Item2)
+            else if ((direction * (newPos.Row - curPos.Row)) == 1 && newPos.Col == curPos.Col)
             {
-                if (GameManager.Board[newPos.Item1][newPos.Item2] == null)
+                if (GameManager.Board[newPos.Row][newPos.Col] == null)
                     return true;
             }
 
-            else if ((direction * (newPos.Item1 - curPos.Item1)) == 1 && Math.Abs(newPos.Item2 - curPos.Item2) == 1)
-                if (GameManager.Board[newPos.Item1][newPos.Item2].Player != this.Player)
-                    return true;
+            else if ((direction * (newPos.Row - curPos.Row)) == 1 && Math.Abs(newPos.Col - curPos.Col) == 1)
+                if (GameManager.Board[newPos.Row][newPos.Col] != null)
+                    if (GameManager.Board[newPos.Row][newPos.Col].Player != this.Player)
+                        return true;
+
+            return false;
+        }
+
+        public override bool CanMove((int Row, int Col) curPos)
+        {
+            int dir = (GameManager.Turn % 2 == 1) ? 1 : -1;
+
+            foreach ((int RowMove, int ColMove) in pawnMoves)
+            {
+                #pragma warning disable IDE0042 // Deconstruct variable declaration
+                (int Row, int Col) newPos = (curPos.Row + (RowMove * dir), curPos.Col + ColMove);
+                #pragma warning restore IDE0042 // Deconstruct variable declaration
+
+                if (newPos.Row >= 0 && newPos.Row < 8 && newPos.Col >= 0 && newPos.Col < 8)
+                {
+                    if (IsValidMove(curPos, (curPos.Row + (RowMove * dir), curPos.Col + ColMove)))
+                    {
+                        GameManager.UpdateBoard(curPos, (curPos.Row + dir, curPos.Col), true, out bool success);
+                        if (success)
+                            return true;
+                    }
+                }
+            }
 
             return false;
         }

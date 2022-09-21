@@ -8,6 +8,11 @@ namespace Chess
 {
     internal static class View
     {
+        // Properties
+        public static string Captured1 { get; private set; }
+        public static string Captured2 { get; private set; }   
+
+
         // Methods
         public static void PrintBoard()
         {
@@ -78,6 +83,26 @@ namespace Chess
             }
         }
 
+        public static void PrintCapturedDisplay(int player)
+        {
+            if (player == 1)
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.Write("Captured: ");
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write(Captured1 + "\n\n");
+                Console.ForegroundColor = ConsoleColor.White;
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write("Captured: ");
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.Write(Captured2 + "\n\n");
+                Console.ForegroundColor = ConsoleColor.White;
+            }
+        }
+
         public static void PrintPiece(Piece piece)
         {
             if (piece.Player == 1)
@@ -93,40 +118,23 @@ namespace Chess
             Console.ForegroundColor = ConsoleColor.White;
         }
 
-        /* public static void PrintScorePlayer1()
+        public static void UpdateCapturedDisplay()
         {
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.Write("\nCaptured: ");
-            int score = 0;
+            string _captured1 = "";
+            string _captured2 = "";
 
-            foreach (Piece piece in GameManager.CapturedPieces)
+            foreach (var piece in GameManager.CapturedPieces)
             {
-                PrintPiece(piece);
-                Console.Write(" ");
-                score += piece.Value;
+                if (piece.Player == 1)
+                    _captured2 += piece.Symbol + " ";
+
+                else
+                    _captured1 += piece.Symbol + " ";
+
+                Captured1 = _captured1;
+                Captured2 = _captured2;
             }
 
-            Console.ForegroundColor = ConsoleColor.Cyan;
-            Console.Write("\nScore: " + score + "\n\n");
-            Console.ForegroundColor = ConsoleColor.White;
         }
-
-        public static void PrintScorePlayer2()
-        {
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.Write("\nCaptured: ");
-            int score = 0;
-
-            foreach (Piece piece in GameManager.CapturedPieces2)
-            {
-                PrintPiece(piece);
-                Console.Write(" ");
-                score += piece.Value;
-            }
-
-            Console.ForegroundColor = ConsoleColor.Red;
-            Console.Write("\nScore: " + score + "\n\n");
-            Console.ForegroundColor= ConsoleColor.White;
-        }*/
     }
 }

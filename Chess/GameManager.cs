@@ -1,10 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Linq;
-using System.Runtime.CompilerServices;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Chess
 {
@@ -63,13 +58,20 @@ namespace Chess
 
             King1 = (King)Board[0][4];
             King2 = (King)Board[7][4];
+            King1.UpdatePosition((0, 4));
+            King2.UpdatePosition((7, 4));
         }
 
 
-        public static void UpdateBoard((int, int) curPos, (int, int) newPos)
+        public static void UpdateBoard((int Row, int Col) curPos, (int Row, int Col) newPos, bool onlyTest, out bool success)
         {
-            Piece oldSquare = Board[curPos.Item1][curPos.Item2];
-            Piece newSquare = Board[newPos.Item1][newPos.Item2];
+            Piece oldSquare = Board[curPos.Row][curPos.Col];
+            Piece newSquare = Board[newPos.Row][newPos.Col];
+            Piece saveOld = oldSquare;
+            Piece saveNew = newSquare;
+            Piece capturedPiece = null;
+            bool castleKingside = false;
+            bool castleQueenside = false;
             King king = (oldSquare.Player == 1) ? King1 : King2;
 
             // Remove "PawnGhost" en passant marker on player's next turn
@@ -86,15 +88,15 @@ namespace Chess
                 oldSquare.FalsifyHasNotMoved();
 
             // Create "PawnGhost" as en passant marker behind pawn after moving two spaces.
-            if (oldSquare.Type == "Pawn" && Math.Abs(newPos.Item1 - curPos.Item1) == 2)
+            if (oldSquare.Type == "Pawn" && Math.Abs(newPos.Row - curPos.Row) == 2)
             {
                 if (IsEnPassant(oldSquare.Player, newPos))
                 {
                     Pawn pawn = (Pawn)oldSquare;
                     int rank = (pawn.Player == 1) ? 2 : 5;
-                    Board[rank][curPos.Item2] = new PawnGhost(pawn, (rank, curPos.Item2), pawn.Player);
-                    pawn.AddPawnGhost(Board[rank][curPos.Item2]);
-                    PawnGhosts.Add((PawnGhost)Board[rank][curPos.Item2]);
+                    Board[rank][curPos.Col] = new PawnGhost(pawn, (rank, curPos.Col), pawn.Player);
+                    pawn.AddPawnGhost(Board[rank][curPos.Col]);
+                    PawnGhosts.Add((PawnGhost)Board[rank][curPos.Col]);
                 }
             }
 
@@ -103,17 +105,19 @@ namespace Chess
                 // Castle K and R
                 if (newSquare.Player == oldSquare.Player && oldSquare.Type == "King" && newSquare.Type == "Rook")
                 {
-                    if (newPos.Item2 == 0)
+                    if (newPos.Col == 0)
                     {
-                        Board[curPos.Item1][2] = oldSquare;
-                        Board[curPos.Item1][3] = newSquare;
-                        king.UpdatePosition((curPos.Item1, 2));
+                        Board[curPos.Row][2] = oldSquare;
+                        Board[curPos.Row][3] = newSquare;
+                        castleQueenside = true;
+                        king.UpdatePosition((curPos.Row, 2));
                     }
-                    else if (newPos.Item2 == 7)
+                    else if (newPos.Col == 7)
                     {
-                        Board[curPos.Item1][6] = oldSquare;
-                        Board[curPos.Item1][5] = newSquare;
-                        king.UpdatePosition((curPos.Item1, 6));
+                        Board[curPos.Row][6] = oldSquare;
+                        Board[curPos.Row][5] = newSquare;
+                        castleKingside = true;
+                        king.UpdatePosition((curPos.Row, 6));
                     }
 
                     oldSquare = null;
@@ -127,13 +131,13 @@ namespace Chess
                     {
                         PawnGhost pawnGhost = (PawnGhost)newSquare;
 
-                        CapturedPieces.Add(pawnGhost.Pawn);
+                        capturedPiece = (pawnGhost.Pawn);
                     }
 
                     // All other captures
                     else
                     {
-                        CapturedPieces.Add(newSquare);
+                        capturedPiece = newSquare;
                     }
 
                 }
@@ -143,100 +147,161 @@ namespace Chess
                 if (oldSquare.Type == "King")
                     king.UpdatePosition(newPos);
 
-            Board[newPos.Item1][newPos.Item2] = oldSquare;
-            Board[curPos.Item1][curPos.Item2] = null;
+            Board[newPos.Row][newPos.Col] = oldSquare;
+            Board[curPos.Row][curPos.Col] = null;
 
-            // Evaluate Check and Checkmate conditions. Change reference to opposing king.
-            king = (Turn % 2 == 1) ? King2 : King1;
+            bool check = IsReachable(king.Player, king.Position);
+
+            if (check)
+                success = false;
+            else
+                success = true;
+
+            // If player put their own king in check, undo the move.
+            if (check || onlyTest)
             {
-                king.RemoveCheck();
+                Board[curPos.Row][curPos.Col] = saveOld;
+                Board[newPos.Row][newPos.Col] = saveNew;
 
-                // Is the king in check?
-                if (IsReachable(king.Player, king.Position, out (int, int) enemyPosition))
+                if (Board[curPos.Row][curPos.Col].Type == "Pawn" && Math.Abs(newPos.Row - curPos.Row) == 2)
                 {
-                    king.PutInCheck();
+                    int rank = (Board[curPos.Row][curPos.Col].Player == 1) ? 2 : 5;
+                    if (Board[rank][curPos.Col].Type == "PawnGhost")
+                        Board[rank][curPos.Col] = null;
+                }
 
-                    (int, int) enemyPos = enemyPosition;
+                if (castleKingside)
+                {
+                    Board[curPos.Row][2] = null;
+                    Board[curPos.Row][3] = null;
+                    king.UpdatePosition((curPos.Row, 4));
+                }
+                else if (castleQueenside)
+                {
+                    Board[curPos.Row][6] = null;
+                    Board[curPos.Row][5] = null;
+                    king.UpdatePosition((curPos.Row, 4));
+                }
 
-                    /* Is it impossible to remove the piece inflicting check next turn with a piece that isn't the checked king?*/
-                    if (!IsReachable(Board[enemyPos.Item1][enemyPos.Item2].Player, enemyPos))
+            }
+
+            else
+            {
+                if (capturedPiece != null)
+                {
+                    if (saveNew.Type == "PawnGhost")
                     {
-                        // Can the king move to a safe square?
-                        (int, int)[] adjSquares = new (int, int)[]
-                        {
+                        int dir = (Turn % 2 == 1) ? 1 : -1;
+                        Board[newPos.Row - dir][newPos.Col] = null;
+                    }
+
+                    CapturedPieces.Add(capturedPiece);
+                    CapturedPieces.Sort();
+                    View.UpdateCapturedDisplay();
+
+                    int advantageSwing = (capturedPiece.Player == 1) ? -capturedPiece.Value : capturedPiece.Value;
+
+                    MaterialAdvantage += advantageSwing;
+                }
+            }
+        }
+
+        public static void UpdateBoard((int Row, int Col) curPos, (int Row, int Col) newPos, bool onlyTest)
+        {
+            UpdateBoard(curPos, newPos, onlyTest, out _);
+        }
+
+        public static void EvaluateCheck()
+        {
+            King king = (Turn % 2 == 1) ? King2 : King1;
+
+            king.RemoveCheck();
+
+            // Is the king in check?
+            if (IsReachable(king.Player, king.Position, out (int Row, int Col) enemyPosition))
+            {
+                king.PutInCheck();
+
+                (int Row, int Col) enemyPos = enemyPosition;
+
+                /* Is it impossible to remove the piece inflicting check next turn with a piece that isn't the checked king?*/
+                if (!IsReachable(Board[enemyPos.Row][enemyPos.Col].Player, enemyPos))
+                {
+                    // Can the king move to a safe square?
+                    (int RowMove, int ColMove)[] adjSquares = new (int Row, int Col)[]
+                    {
                             (1, 0), (1, 1), (0, 1), (-1, 1), (-1, 0), (-1, -1), (0, -1), (1, -1)
-                        };
+                    };
 
-                        int row = king.Position.Item1;
-                        int col = king.Position.Item2;
-                        bool canMove = false;
+                    int row = king.Position.Row;
+                    int col = king.Position.Col;
+                    bool canMove = false;
 
-                        foreach ((int, int) square in adjSquares)
+                    foreach ((int RowMove, int ColMove) in adjSquares)
+                    {
+                        if ((row + RowMove) >= 0 && (row + RowMove) < 8 && (col + ColMove) >= 0 && (col + ColMove) < 8)
                         {
-                            if ((row + square.Item1) >= 0 && (row + square.Item1) < 8 && (col + square.Item2) >= 0 && (col + square.Item2) < 8)
+                            if (Board[row + RowMove][col + ColMove] == null)
                             {
-                                if (Board[row + square.Item1][col + square.Item2] == null)
+                                if (!IsReachable(king.Player, ((row + RowMove), (col + ColMove))))
                                 {
-                                    if (!IsReachable(king.Player, ((row + square.Item1), (col + square.Item2))))
-                                    {
-                                        canMove = true;
-                                        break;
-                                    }
+                                    canMove = true;
+                                    break;
                                 }
-
-                                else if (Board[row + square.Item1][col + square.Item2].Player != king.Player)
-                                {
-                                    if (!IsReachable(king.Player, ((row + square.Item1), (col + square.Item2))))
-                                    {
-                                        canMove = true;
-                                        break;
-                                    }
-                                }
-
                             }
+
+                            else if (Board[row + RowMove][col + ColMove].Player != king.Player)
+                            {
+                                if (!IsReachable(king.Player, ((row + RowMove), (col + ColMove))))
+                                {
+                                    canMove = true;
+                                    break;
+                                }
+                            }
+
+                        }
+                    }
+
+                    // If the king cannot move to a safe square and the checking piece cannot be removed.
+                    if (canMove == false)
+                    {
+                        if (Board[enemyPos.Row][enemyPos.Col].Type == "Knight" || Board[enemyPos.Row][enemyPos.Col].Type == "Pawn")
+                        {
+                            CheckMate();
                         }
 
-                        // If the king cannot move to a safe square and the checking piece cannot be removed.
-                        if (canMove == false)
+                        bool canBlock = false;
+
+                        // Can the player shield the king with another piece?
+                        while (king.Position.Row != enemyPos.Row && king.Position.Col != enemyPos.Col && canBlock == false)
                         {
-                            if (Board[enemyPos.Item1][enemyPos.Item2].Type == "Knight" || Board[enemyPos.Item1][enemyPos.Item2].Type == "Pawn")
+                            int rowShift = 0;
+
+                            if (king.Position.Row != enemyPos.Row)
+                                rowShift = (king.Position.Row > enemyPos.Row) ? 1 : -1;
+
+                            int colShift = 0;
+
+                            if (king.Position.Col != enemyPos.Col)
+                                colShift = (king.Position.Col > enemyPos.Col) ? 1 : -1;
+
+                            if (king.Position.Row != (enemyPos.Row + rowShift) && king.Position.Col != (enemyPos.Col + colShift))
                             {
-                                CheckMate();
-                            }
+                                // Is opposing player Player 1 or Player 2?
+                                int oppPlayer = (king.Player == 1) ? 2 : 1;
 
-                            bool canBlock = false;
-
-                            // Can the player shield the king with another piece?
-                            while (king.Position.Item1 != enemyPos.Item1 && king.Position.Item2 != enemyPos.Item2 && canBlock == false)
-                            {
-                                int rowShift = 0;
-
-                                if (king.Position.Item1 != enemyPos.Item1)
-                                    rowShift = (king.Position.Item1 > enemyPos.Item1) ? 1 : -1;
-
-                                int colShift = 0;
-
-                                if (king.Position.Item2 != enemyPos.Item2)
-                                    colShift = (king.Position.Item2 > enemyPos.Item2) ? 1 : -1;
-
-                                if (king.Position.Item1 != (enemyPos.Item1 + rowShift) && king.Position.Item2 != (enemyPos.Item2 + colShift))
+                                if (IsReachable(oppPlayer, ((enemyPos.Row + rowShift), (enemyPos.Col + colShift))))
                                 {
-                                    // Is opposing player Player 1 or Player 2?
-                                    int oppPlayer = (king.Player == 1) ? 2 : 1;
-
-                                    if (IsReachable(oppPlayer, ((enemyPos.Item1 + rowShift), (enemyPos.Item2 + colShift))))
-                                    {
-                                        canBlock = true;
-                                    }
+                                    canBlock = true;
                                 }
-
-                                enemyPos.Item1 += rowShift;
-                                enemyPos.Item2 += colShift;
                             }
 
-                            if (canBlock == false)
-                                CheckMate();
+                            enemyPos.Row += rowShift;
+                            enemyPos.Col += colShift;
                         }
+
+                        if (canBlock == false)
+                            CheckMate();
                     }
                 }
             }
@@ -244,7 +309,33 @@ namespace Chess
             Turn++;
         }
 
-        public static bool IsUniversalInvalidMove((int, int) curPos, (int, int) newPos)
+        public static bool IsDraw()
+        {
+            int player = (Turn % 2 == 1) ? 2 : 1;
+
+            for (int i = 0; i < 8; i++)
+            {
+                for (int j = 0; j < 8; j++)
+                {
+                    if (Board[i][j] == null)
+                        continue;
+
+                    else if (Board[i][j].Player != player)
+                        continue;
+
+                    else
+                    {
+                        if (Board[i][j].CanMove((i, j)))
+                            return false;
+                    }
+                }
+            }
+
+            return true;
+        }
+        
+
+        public static bool IsUniversalInvalidMove((int Row, int Col) curPos, (int Row, int Col) newPos)
         {
             // These are separate IF statements because I intend to add error messages
 
@@ -253,76 +344,82 @@ namespace Chess
                 return true;
 
             // Requested move is out of bounds.
-            if (newPos.Item1 < 0 || newPos.Item1 > 7 || newPos.Item2 < 0 || newPos.Item2 > 7)
-                return true;
-
-            // Requested move of other player's piece.
-            if ((Board[curPos.Item1][curPos.Item2].Player == 1 && Turn % 2 == 0)
-                || (Board[curPos.Item1][curPos.Item2].Player == 2 && Turn % 2 == 1))
+            if (newPos.Row < 0 || newPos.Row > 7 || newPos.Col < 0 || newPos.Col > 7)
                 return true;
 
             // Requested move on friendly occupied square, except when castling.
-            if (Board[newPos.Item1][newPos.Item2] != null)
-                if (Board[newPos.Item1][newPos.Item2].Player == Board[curPos.Item1][curPos.Item2].Player)
+            if (Board[newPos.Row][newPos.Col] != null)
+                if (Board[newPos.Row][newPos.Col].Player == Board[curPos.Row][curPos.Col].Player)
                 {
                     // If not a King and Rook castling
-                    if (!(Board[curPos.Item1][curPos.Item2].Symbol == Reference.pieceSymbol["King"] && Board[curPos.Item1][curPos.Item2].HasNotMoved
-                        && Board[newPos.Item1][newPos.Item2].Symbol == Reference.pieceSymbol["Rook"] && Board[newPos.Item1][newPos.Item2].HasNotMoved))
+                    if (!(Board[curPos.Row][curPos.Col].Symbol == Reference.pieceSymbol["King"] && Board[curPos.Row][curPos.Col].HasNotMoved
+                        && Board[newPos.Row][newPos.Col].Symbol == Reference.pieceSymbol["Rook"] && Board[newPos.Row][newPos.Col].HasNotMoved))
                         return true;
                 }
 
             return false;
         }
 
-        public static bool IsDiagonalBlocked((int, int) curPos, (int, int) newPos)
+        public static bool IsValidPiece((int Row, int Col) curPos)
         {
-            int directionHor = (newPos.Item1 > curPos.Item1) ? 1 : -1;
-            int directionVer = (newPos.Item2 > curPos.Item2) ? 1 : -1;
+            // Requested move of other player's piece.
+            if ((Board[curPos.Row][curPos.Col].Player == 1 && Turn % 2 == 0)
+                || (Board[curPos.Row][curPos.Col].Player == 2 && Turn % 2 == 1))
+                return false;
 
-            for (int i = 1; i < Math.Abs(newPos.Item1 - curPos.Item1); i++)
-                if (Board[curPos.Item1 + (i * directionHor)][curPos.Item2 + (i * directionVer)] != null)
+            else
+                return true;
+        }
+
+        public static bool IsDiagonalBlocked((int Row, int Col) curPos, (int Row, int Col) newPos)
+        {
+            int directionHor = (newPos.Row > curPos.Row) ? 1 : -1;
+            int directionVer = (newPos.Col > curPos.Col) ? 1 : -1;
+
+            for (int i = 1; i < Math.Abs(newPos.Row - curPos.Row); i++)
+                if (Board[curPos.Row + (i * directionHor)][curPos.Col + (i * directionVer)] != null)
                     return true;
 
             return false;
         }
 
-        public static bool IsStraightBlocked((int, int) curPos, (int, int) newPos)
+        public static bool IsStraightBlocked((int Row, int Col) curPos, (int Row, int Col) newPos)
         {
-            if (newPos.Item1 != curPos.Item1)
+            if (newPos.Row != curPos.Row)
             {
-                int direction = (newPos.Item1 > curPos.Item1) ? 1 : -1;
-                int gap = Math.Abs(newPos.Item1 - curPos.Item1);
+                int direction = (newPos.Row > curPos.Row) ? 1 : -1;
+                int gap = Math.Abs(newPos.Row - curPos.Row);
                 for (int i = 1; i < gap; i++)
-                    if (Board[curPos.Item1 + (i * direction)][curPos.Item2] != null)
+                    if (Board[curPos.Row + (i * direction)][curPos.Col] != null)
                         return true;
             }
             else
             {
-                int direction = (newPos.Item2 > curPos.Item2) ? 1 : -1;
-                int gap = Math.Abs(newPos.Item2 - curPos.Item2);
+                int direction = (newPos.Col > curPos.Col) ? 1 : -1;
+                int gap = Math.Abs(newPos.Col - curPos.Col);
                 for (int i = 1; i < gap; i++)
-                    if (Board[curPos.Item1][curPos.Item2 + (i * direction)] != null)
+                    if (Board[curPos.Row][curPos.Col + (i * direction)] != null)
                         return true;
             }
 
             return false;
         }
 
-        public static bool IsEnPassant(int player, (int, int) newPos)
+        public static bool IsEnPassant(int player, (int Row, int Col) newPos)
         {
             int rank = (player == 1) ? 3 : 4;
 
-            if (newPos.Item2 - 1 >= 0)
+            if (newPos.Col - 1 >= 0)
             {
-                if (Board[rank][newPos.Item2 - 1] != null)
-                    if (Board[rank][newPos.Item2 - 1].Type == "Pawn" && Board[rank][newPos.Item2 - 1].Player != player)
+                if (Board[rank][newPos.Col - 1] != null)
+                    if (Board[rank][newPos.Col - 1].Type == "Pawn" && Board[rank][newPos.Col - 1].Player != player)
                         return true;
             }
 
-            if (newPos.Item2 + 1 < 8)
+            if (newPos.Col + 1 < 8)
             {
-                if (Board[rank][newPos.Item2 + 1] != null)
-                    if (Board[rank][newPos.Item2 + 1].Type == "Pawn" && Board[rank][newPos.Item2 + 1].Player != player)
+                if (Board[rank][newPos.Col + 1] != null)
+                    if (Board[rank][newPos.Col + 1].Type == "Pawn" && Board[rank][newPos.Col + 1].Player != player)
                         return true;
             }
 
@@ -331,21 +428,16 @@ namespace Chess
 
         // Can the other player move to this square?
         // Has overload method that does not out enemyPosition.
-        public static bool IsReachable(int player, (int, int) position, out (int, int) enemyPosition)
+        public static bool IsReachable(int player, (int Row, int Col) position, out (int Row, int Col) enemyPosition)
         {
-            int row = position.Item1;
-            int col = position.Item2;
+            int row = position.Row;
+            int col = position.Col;
 
-            (int, int)[] knightMoves = new (int, int)[]
+            foreach ((int RowMove, int ColMove) in Knight.knightMoves)
             {
-                (2, -1), (2, 1), (1, 2), (-1, 2), (-2, 1), (-2, -1), (-1, -2), (1, -2)
-            };
-
-            foreach ((int, int) move in knightMoves)
-            {
-                if (IsKnight((row + move.Item1), (col + move.Item2), player))
+                if (IsKnight((row + RowMove), (col + ColMove), player))
                 {
-                    enemyPosition = ((row + move.Item1), (col + move.Item2));
+                    enemyPosition = ((row + RowMove), (col + ColMove));
                     return true;
                 }
             }
@@ -369,7 +461,7 @@ namespace Chess
 
                     if (isEnemy)
                     {
-                        if (IsQueenRook(row + i, col))
+                        if (IsQueenOrRook(row + i, col))
                         {
                             enemyPosition = ((row + i), col);
                             return true;
@@ -384,7 +476,7 @@ namespace Chess
 
                     if (isEnemy)
                     {
-                        if (IsQueenRook(row, col + i))
+                        if (IsQueenOrRook(row, col + i))
                         {
                             enemyPosition = (row, (col + i));
                             return true;
@@ -399,7 +491,7 @@ namespace Chess
 
                     if (isEnemy)
                     {
-                        if (IsQueenRook(row - i, col))
+                        if (IsQueenOrRook(row - i, col))
                         {
                             enemyPosition = ((row - i), col);
                             return true;
@@ -414,7 +506,7 @@ namespace Chess
 
                     if (isEnemy)
                     {
-                        if (IsQueenRook(row, col - i))
+                        if (IsQueenOrRook(row, col - i))
                         {
                             enemyPosition = (row, (col - i));
                             return true;
@@ -429,7 +521,7 @@ namespace Chess
 
                     if (isEnemy)
                     {
-                        if ((IsQueenBishop(row + i, col + i)) || (player == 1 && i == 1 && IsPawn(row + i, col + i)))
+                        if (IsQueenOrBishop(row + i, col + i) || IsKingOrPawn(row + i, col + i, player, 1, i))
                         {
                             enemyPosition = ((row + i), (col + i));
                             return true;
@@ -444,7 +536,7 @@ namespace Chess
 
                     if (isEnemy)
                     {
-                        if ((IsQueenBishop(row - i, col + i)) || (player == 2 && i == 1 && IsPawn(row - i, col + i)))
+                        if (IsQueenOrBishop(row - i, col + i) || IsKingOrPawn(row - i, col + i, player, 2, i))
                         {
                             enemyPosition = ((row - i), (col + i));
                             return true;
@@ -460,7 +552,7 @@ namespace Chess
 
                     if (isEnemy)
                     {
-                        if ((IsQueenBishop(row - i, col - i)) || (player == 2 && i == 1 && IsPawn(row - i, col - i)))
+                        if (IsQueenOrBishop(row - i, col - i) || IsKingOrPawn(row - i, col - i, player, 2, i))
                         {
                             enemyPosition = ((row - i), (col - i));
                             return true;
@@ -475,7 +567,7 @@ namespace Chess
 
                     if (isEnemy)
                     {
-                        if ((IsQueenBishop(row + i, col - i)) || (player == 1 && i == 1 && IsPawn(row + i, col - i)))
+                        if ((IsQueenOrBishop(row + i, col - i)) || IsKingOrPawn(row + i, col - i, player, 1, i))
                         {
                             enemyPosition = ((row + i), (col - i));
                             return true;
@@ -488,7 +580,7 @@ namespace Chess
             return false;
         }
 
-        public static bool IsReachable(int player, (int, int) position)
+        public static bool IsReachable(int player, (int Row, int Col) position)
         {
             return IsReachable(player, position, out _);
         }
@@ -515,14 +607,16 @@ namespace Chess
                 }
                 else if (Board[row][col].Player == player)
                 {
+                    isEnemy = false;
                     return true; // friendly piece blocks way, end search
                 }
             }
 
+            isEnemy = false;
             return false;
         }
 
-        public static bool IsQueenBishop(int row, int col)
+        public static bool IsQueenOrBishop(int row, int col)
         {
             if ((Board[row][col].Type == "Bishop" || Board[row][col].Type == "Queen"))
                 return true;
@@ -530,15 +624,22 @@ namespace Chess
             return false;
         }
 
-        public static bool IsPawn(int row, int col)
+        public static bool IsKingOrPawn(int row, int col, int player, int reqPlayer, int i)
         {
-            if ((Board[row][col].Type == "Pawn"))
-                return true;
+            if (i == 1)
+            {
+                if ((Board[row][col].Type == "King"))
+                    return true;
+
+                else if (player == reqPlayer)
+                    if (Board[row][col].Type == "Pawn")
+                        return true;
+            }
 
             return false;
         }
 
-        public static bool IsQueenRook(int row, int col)
+        public static bool IsQueenOrRook(int row, int col)
         {
             if (Board[row][col].Type == "Rook" || Board[row][col].Type == "Queen")
                 return true;
@@ -547,6 +648,15 @@ namespace Chess
         }
 
         public static void CheckMate()
-        {}
+        {
+            Console.WriteLine("\n\nCheckmate!");
+            Console.ReadLine();
+        }
+
+        public static void Draw()
+        {
+            Console.WriteLine("\n\nDraw!");
+            Console.ReadLine();
+        }
     }
 }

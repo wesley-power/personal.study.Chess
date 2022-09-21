@@ -15,6 +15,10 @@ namespace Chess
         public new int Player { get; protected set; }
         public override bool HasNotMoved { get; protected set; }
 
+        // Fields
+        public static readonly (int RowMove, int ColMove)[] bishopMoves = new (int RowMove, int ColMove)[]
+        { (1, 1), (-1, 1), (-1, -1), (1, -1) };
+
         // Constructor
         public Bishop(int player) : base(player)
         {
@@ -26,17 +30,35 @@ namespace Chess
         }
 
         // Methods
-        public override bool IsValidMove((int, int) curPos, (int, int) newPos)
+        public override bool IsValidMove((int Row, int Col) curPos, (int Row, int Col) newPos)
         {
             if (GameManager.IsUniversalInvalidMove(curPos, newPos))
                 return false;
 
-            if (Math.Abs(newPos.Item1 - curPos.Item1) == Math.Abs(newPos.Item2 - curPos.Item2))
+            if (Math.Abs(newPos.Row - curPos.Row) == Math.Abs(newPos.Col - curPos.Col))
             {
                 if (GameManager.IsDiagonalBlocked(curPos, newPos))
                     return false;
 
                 return true;
+            }
+
+            return false;
+        }
+
+        public override bool CanMove((int Row, int Col) curPos)
+        {
+            foreach ((int RowMove, int ColMove) in bishopMoves)
+            {
+                (int Row, int Col) newPos = (curPos.Row + RowMove, curPos.Col + ColMove);
+
+                if (newPos.Row >= 0 && newPos.Row < 8 && newPos.Col >= 0 && newPos.Col < 8)
+                    if (IsValidMove(curPos, newPos))
+                    {
+                        GameManager.UpdateBoard(curPos, newPos, true, out bool success);
+                        if (success)
+                            return true;
+                    }
             }
 
             return false;

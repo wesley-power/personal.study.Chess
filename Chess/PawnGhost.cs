@@ -13,12 +13,12 @@ namespace Chess
         public override int Value { get; protected set; }
         public override string Symbol { get; protected set; }
         public new int Player { get; protected set; }
-        public (int, int) Position { get; protected set; }
+        public (int Row, int Col) Position { get; protected set; }
         public Pawn Pawn { get; protected set; }
         public int Counter { get; protected set; }
 
         // Constructor
-        public PawnGhost(Pawn pawn, (int, int) position, int player) : base(player)
+        public PawnGhost(Pawn pawn, (int Row, int Pos) position, int player) : base(player)
         {
             Type = "PawnGhost";
             Pawn = pawn;
@@ -35,7 +35,7 @@ namespace Chess
 
             if (Counter == 0)
             {
-                GameManager.Board[Position.Item1][Position.Item2] = null;
+                GameManager.Board[Position.Row][Position.Col] = null;
             }
         }
     }
