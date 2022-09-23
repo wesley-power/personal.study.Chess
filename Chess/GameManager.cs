@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Media;
 
 namespace Chess
 {
@@ -166,8 +167,9 @@ namespace Chess
                 if (Board[curPos.Row][curPos.Col].Type == "Pawn" && Math.Abs(newPos.Row - curPos.Row) == 2)
                 {
                     int rank = (Board[curPos.Row][curPos.Col].Player == 1) ? 2 : 5;
-                    if (Board[rank][curPos.Col].Type == "PawnGhost")
-                        Board[rank][curPos.Col] = null;
+                    if (Board[rank][curPos.Col] != null)
+                        if (Board[rank][curPos.Col].Type == "PawnGhost")
+                            Board[rank][curPos.Col] = null;
                 }
 
                 if (castleKingside)
@@ -203,6 +205,16 @@ namespace Chess
 
                     MaterialAdvantage += advantageSwing;
                 }
+
+                if ((newPos.Row == 7 || newPos.Row == 0) && Board[newPos.Row][newPos.Col] != null)
+                    if (Board[newPos.Row][newPos.Col].Type == "Pawn")
+                    {
+                        View.PrintBoard();
+                        Pawn pawn = (Pawn)Board[newPos.Row][newPos.Col];
+                        pawn.Promote(newPos);
+                    }
+
+                Turn++;
             }
         }
 
@@ -305,11 +317,9 @@ namespace Chess
                     }
                 }
             }
-
-            Turn++;
         }
 
-        public static bool IsDraw()
+        public static bool IsStalemate()
         {
             int player = (Turn % 2 == 1) ? 2 : 1;
 
@@ -653,7 +663,7 @@ namespace Chess
             Console.ReadLine();
         }
 
-        public static void Draw()
+        public static void StaleMate()
         {
             Console.WriteLine("\n\nDraw!");
             Console.ReadLine();

@@ -94,9 +94,33 @@ namespace Chess
             PawnGhost = null;
         }
 
-        public void Promote()
+        public void Promote((int Row, int Col) position)
         {
+            string symbol = "";
 
+            while (symbol != "Q" && symbol != "R" && symbol != "B" && symbol != "N")
+            {
+                Console.Write("Promote your pawn to Q, R, B N.\nEnter symbol: ");
+                symbol = Console.ReadLine();
+                symbol = symbol.ToUpper();
+                
+                if (symbol != "Q" && symbol != "R" && symbol != "B" && symbol != "N")
+                {
+                    Console.WriteLine("Invalid input.");
+                }
+            }
+
+            if (symbol == "Q")
+                GameManager.Board[position.Row][position.Col] = new Queen(this.Player);
+
+            else if (symbol == "R")
+                GameManager.Board[position.Row][position.Col] = new Rook(this.Player);
+
+            else if (symbol == "B")
+                GameManager.Board[position.Row][position.Col] = new Bishop(this.Player);
+
+            else
+                GameManager.Board[position.Row][position.Col] = new Knight(this.Player);
         }
 
         public override void FalsifyHasNotMoved()

@@ -54,8 +54,8 @@ namespace Chess
                     {
                         GameManager.UpdateBoard(firstPos, secondPos, false);
                         GameManager.EvaluateCheck();
-                        if (GameManager.IsDraw())
-                            GameManager.Draw();
+                        if (GameManager.IsStalemate())
+                            GameManager.StaleMate();
                     }
             }
         }
