@@ -213,8 +213,6 @@ namespace Chess
                         Pawn pawn = (Pawn)Board[newPos.Row][newPos.Col];
                         pawn.Promote(newPos);
                     }
-
-                Turn++;
             }
         }
 
@@ -655,6 +653,11 @@ namespace Chess
                 return true;
 
             return false;
+        }
+
+        public static void NextTurn()
+        {
+            Turn++;
         }
 
         public static void CheckMate()

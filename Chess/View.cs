@@ -11,9 +11,37 @@ namespace Chess
         // Properties
         public static string Captured1 { get; private set; }
         public static string Captured2 { get; private set; }   
+        public static string Remarks { get; private set; }
 
 
         // Methods
+        public static void PrintDisplay()
+        {
+            (int First, int Second) = (GameManager.Turn % 2 == 1) ? (2, 1) : (1, 2);
+
+            View.PrintCapturedDisplay(First);
+
+            View.PrintBoard();
+
+            View.PrintCapturedDisplay(Second);
+
+            Console.WriteLine("TURN " + GameManager.Turn);
+
+            if (Second == 1)
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.Write("BLUE");
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write("RED");
+            }
+
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write(" to move!\n\n\n");
+        }
+
         public static void PrintBoard()
         {
             string file1 = "\t       A    B    C    D    E    F    G    H";
@@ -135,6 +163,17 @@ namespace Chess
                 Captured2 = _captured2;
             }
 
+        }
+
+        public static void UpdateRemarks(int top, string remark)
+        {
+            Console.SetCursorPosition(0, top - 1);
+            Console.Write("                                                                                                                      ");
+            Console.SetCursorPosition(0, top - 1);
+
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.Write("Remarks: " + remark);
+            Console.ForegroundColor = ConsoleColor.White;
         }
     }
 }
