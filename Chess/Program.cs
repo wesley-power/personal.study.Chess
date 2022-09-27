@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading.Tasks;
 
@@ -8,46 +9,64 @@ namespace Chess
 {
     internal class Program
     {
+        public static bool AppOn { get; private set; }
+        public static bool MatchOn { get; private set; }
+        public static string EndReason { get; private set; }
+        public static bool IsTurnComplete { get; private set; }
+
         static void Main(string[] args)
         {
-            new GameManager();
-            bool appOn = true;
+            StartApp();
 
-            while (appOn)
+            while (AppOn)
             {
-                Console.WriteLine("Welcome to Chess! Press Enter to start a new game.");
-                Console.ReadLine();
+                StartMatch();
+                View.PrintTitleScreen();
 
-                bool matchOn = true;
+                GameManager main = new GameManager();
+                main.SetBoard();
 
-                foreach (Piece[] rank in GameManager.Board)
-                    Array.Clear(rank, 0, rank.Length);
+                GameManager record = new GameManager();
+                record.SetBoard();
+                View.PreviousTurns = new List<GameManager> { record };
 
-                GameManager.SetBoard();
+                main.NextTurn();
+                Console.Clear();
+                View.PrintDisplay(main, false, main.Turn);
 
-                while (matchOn)
+                while (MatchOn)
                 {
-                    Console.Clear();
+                    SetTurnComplete(false);
 
-                    View.PrintDisplay();
+                    // Checks for null and invalid inputs are included in GetMove()
+                    ((int Row, int Col) MoveFrom, (int Row, int Col) MoveTo) = GetMove(main);
 
-                    ((int Row, int Col) MoveFrom, (int Row, int Col) MoveTo) = GetMove();
+                    if (main.Board[MoveFrom.Row][MoveFrom.Col].IsValidMove(main, MoveFrom, MoveTo))
+                    {
+                        main.UpdateBoard(MoveFrom, MoveTo, false);
 
-                    if (GameManager.Board[MoveFrom.Row][MoveFrom.Col] != null)
-                        if (GameManager.Board[MoveFrom.Row][MoveFrom.Col].IsValidMove(MoveFrom, MoveTo) && GameManager.IsValidPiece(MoveFrom))
+                        if (IsTurnComplete)
                         {
-                            GameManager.UpdateBoard(MoveFrom, MoveTo, false);
-                            GameManager.EvaluateCheck(); // Currently broken
-                            if (GameManager.IsStalemate())
-                                GameManager.StaleMate();
-                            else
-                                GameManager.NextTurn();
+                            main.EvaluateCheck();
+                            main.EvaluateStaleMate();
+
+                            if (MatchOn)
+                            {
+                                record = new GameManager();
+                                record.CopyGameManager(main);
+                                View.PreviousTurns.Add(record);
+
+                                main.NextTurn();
+                                Console.Clear();
+                                View.PrintDisplay(main, false, main.Turn);
+                            }
                         }
+                    }
                 }
             }
         }
 
-        public static ((int, int), (int, int)) GetMove()
+        public static ((int, int), (int, int)) GetMove(GameManager gameManager)
         {
             (int Left, int Top) = (Console.CursorLeft, Console.CursorTop);
             (int Row, int Col) moveFrom = (-1, -1);
@@ -60,36 +79,42 @@ namespace Chess
 
                 while (moveFrom.Col == -1 || moveFrom.Row == -1)
                 {
+                    Console.Clear();
+                    View.PrintDisplay(gameManager, false, gameManager.Turn);
+
                     View.UpdateRemarks(Top, "                                                                                           ");
                     View.UpdateRemarks(Top, "Enter the letter file and number rank of the piece you want to move. Example format: A2.");
 
-                    int player = (GameManager.Turn % 2 == 1) ? 1 : 2;
+                    int player = (gameManager.Turn % 2 == 1) ? 1 : 2;
 
                     Console.SetCursorPosition(Left, Top);
                     Console.Write("                                                                                           ");
                     Console.SetCursorPosition(Left, Top);
                     Console.Write("Move: ");
-                    moveFrom = ConvertToCoordinates(1, ref fileRank);
+                    moveFrom = ConvertToCoordinates(gameManager, 1, ref fileRank);
 
-                    if (GameManager.Board[moveFrom.Row][moveFrom.Col] == null)
+                    if (moveFrom == (-1, -1))
+                        continue;
+
+                    else if (gameManager.Board[moveFrom.Row][moveFrom.Col] == null)
                         moveFrom = (-1, -1);
 
-                    else if (GameManager.Board[moveFrom.Row][moveFrom.Col].Player != player)
+                    else if (gameManager.Board[moveFrom.Row][moveFrom.Col].Player != player)
                         moveFrom = (-1, -1);
 
                     if (moveFrom.Col == -1 || moveFrom.Row == -1)
                         View.UpdateRemarks(Top, "Invalid input. Input must be letter file and number rank of one of your pieces. Example format: E2");
                 }
 
-                string pieceType = GameManager.Board[moveFrom.Row][moveFrom.Col].Type;
+                string pieceType = gameManager.Board[moveFrom.Row][moveFrom.Col].Type;
 
                 View.UpdateRemarks(Top, "Moving " + pieceType + " on " + fileRank + ". Enter new square to move to, or enter \"CANCEL\" to select a different piece.");
 
                 while (moveTo.Col == -1 || moveTo.Row == -1 || moveTo == (-2, -2))
-                {
+                { 
                     Console.SetCursorPosition(Left, Top);
-                    Console.Write("Move to: ");
-                    moveTo = ConvertToCoordinates(2, ref fileRank);
+                    Console.Write("Move " + pieceType + " on " + fileRank + " to: ");
+                    moveTo = ConvertToCoordinates(gameManager, 2, ref fileRank);
 
                     if (moveTo == (-2, -2))
                         break;
@@ -102,24 +127,48 @@ namespace Chess
             return (moveFrom, moveTo);
         }
 
-        public static (int, int) ConvertToCoordinates(int pass, ref string fileRank)
+        public static (int, int) ConvertToCoordinates(GameManager gameManager, int pass, ref string fileRank)
         {
             (int Left, int Top) = (Console.CursorLeft, Console.CursorTop);
             Console.Write("                                                                                           ");
             Console.SetCursorPosition(Left, Top);
 
-            fileRank = Console.ReadLine();
-            fileRank = fileRank.ToUpper();
+            string input = Console.ReadLine();
+            input = input.ToUpper();
 
-            if (pass == 2 && fileRank == "CANCEL")
+            if (input == "REVIEW")
+            {
+                View.PrintPreviousTurns(gameManager);
+            }
+            else if (input == "HELP")
+            {
+                Reference.OpenMenu();
+
+                if (pass == 2)
+                {
+                    Console.Clear();
+                    View.PrintDisplay(gameManager, false, gameManager.Turn);
+                }
+            }
+
+            /* pass 1 is when member selects a piece to move.
+             * pass 2 is selecting what space to move to.
+             * The below statement allows the member to start
+             * over and select a different piece to move.*/
+            if (pass == 2 && input == "CANCEL")
                 return (-2, -2);
 
-            else if (fileRank.Length != 2)
+            /* The below statement identifies an invalid input
+             * of two many characters and asktehs player to
+             * re-enter a valid input.*/
+            else if (input.Length != 2)
                 return (-1, -1);
 
+            fileRank = input;
             string file = fileRank.Substring(0, 1);
             int col;
 
+            //Converts letter "file" input to array index (the column of  a jagged array).
             switch (file)
             {
                 case "A":
@@ -147,12 +196,13 @@ namespace Chess
                     col = 7;
                     break;
                 default:
-                    col = -1;
-                    break;
+                    return (-1, -1);
             }
 
+            // default return if second digit of player input is invalid.
             int row = -1;
 
+            // Converts number rank to index of subarray, the row in a jagged array.
             if (Char.IsNumber(fileRank, 1))
             {
                 int rank = Convert.ToInt32(fileRank.Substring(1, 1));
@@ -160,8 +210,32 @@ namespace Chess
                 if (rank > 0 && rank <= 8)
                     row = rank - 1;
             }
+            else
+                return (-1, -1);
 
             return (row, col);
+        }
+
+        public static void SetTurnComplete(bool value)
+        {
+            IsTurnComplete = value;
+        }
+
+        public static void StartApp()
+        {
+            AppOn = true;
+        }
+
+        public static void StartMatch()
+        {
+            MatchOn = true;
+        }
+
+        public static void EndMatch(string endReason)
+        {
+            EndReason = endReason;
+            MatchOn = false;
+            Console.WriteLine(EndReason); // debug
         }
     }
 }

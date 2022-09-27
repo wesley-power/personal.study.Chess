@@ -30,14 +30,14 @@ namespace Chess
         }
 
         // Methods
-        public override bool IsValidMove((int Row, int Col) curPos, (int Row, int Col) newPos)
+        public override bool IsValidMove(GameManager gameManager, (int Row, int Col) curPos, (int Row, int Col) newPos)
         {
-            if (GameManager.IsUniversalInvalidMove(curPos, newPos))
+            if (gameManager.IsUniversalInvalidMove(curPos, newPos))
                 return false;
 
             if (Math.Abs(newPos.Row - curPos.Row) == Math.Abs(newPos.Col - curPos.Col))
             {
-                if (GameManager.IsDiagonalBlocked(curPos, newPos))
+                if (gameManager.IsDiagonalBlocked(curPos, newPos))
                     return false;
 
                 return true;
@@ -46,16 +46,16 @@ namespace Chess
             return false;
         }
 
-        public override bool CanMove((int Row, int Col) curPos)
+        public override bool CanMove(GameManager gameManager, (int Row, int Col) curPos)
         {
             foreach ((int RowMove, int ColMove) in bishopMoves)
             {
                 (int Row, int Col) newPos = (curPos.Row + RowMove, curPos.Col + ColMove);
 
                 if (newPos.Row >= 0 && newPos.Row < 8 && newPos.Col >= 0 && newPos.Col < 8)
-                    if (IsValidMove(curPos, newPos))
+                    if (IsValidMove(gameManager, curPos, newPos))
                     {
-                        GameManager.UpdateBoard(curPos, newPos, true, out bool success);
+                        gameManager.UpdateBoard(curPos, newPos, true, out bool success);
                         if (success)
                             return true;
                     }
@@ -67,6 +67,28 @@ namespace Chess
         public override void FalsifyHasNotMoved()
         {
             HasNotMoved = false;
+        }
+
+        public static void Define()
+        {
+            Console.WriteLine("HELP: Learn about the Bishop\n\nSymbol: B\tMaterial Value: 3\n\nThe Bishop may move in any straight, diagonal line as far as the player wishes, " +
+                "until it reaches either the edge of the board or another piece. The Bishop may not hope over friendly or opposing pieces, but may " +
+                "capture an opposing piece by stopping on its square. Each player has two Bishops, whose starting positions on the back rank flank " +
+                "the center squares occupied by the King and Queen. The Bishops are usually activated in the early phases of the game, when pieces" +
+                "are moved to control important squares in the center of the board.\n\n" +
+                "STARTING POSITIONS:\t\t\t\t\tPOSSIBLE MOVEMENT:\r\n+----+----+----+----+----+----+----+----+\t\t+----+----+----+----+----+----+--" +
+                "--+----+\r\n|    |    |    |    |    |    |    |    |\t\t|    |    |    |    |    |    |    |  . |\r\n+----+----+----+----+----+-" +
+                "---+----+----+\t\t+----+----+----+----+----+----+----+----+\r\n|    |    |    |    |    |    |    |    |\t\t|  . |    |    |    |" +
+                "    |    |  . |    |\r\n+----+----+----+----+----+----+----+----+\t\t+----+----+----+----+----+----+----+----+\r\n|    |    |    " +
+                "|    |    |    |    |    |\t\t|    |  . |    |    |    |  . |    |    |\r\n+----+----+----+----+----+----+----+----+\t\t+----+---" +
+                "-+----+----+----+----+----+----+\r\n|    |    |    |    |    |    |    |    |\t\t|    |    |  . |    |  . |    |    |    |\r\n+--" +
+                "--+----+----+----+----+----+----+----+\t\t+----+----+----+----+----+----+----+----+\r\n|    |    |    |    |    |    |    |    |\t" +
+                "\t|    |    |    |  B |    |    |    |    |\r\n+----+----+----+----+----+----+----+----+\t\t+----+----+----+----+----+----+----+-" +
+                "---+\r\n|    |    |    |    |    |    |    |    |\t\t|    |    |  . |    |  . |    |    |    |\r\n+----+----+----+----+----+----+" +
+                "----+----+\t\t+----+----+----+----+----+----+----+----+\r\n|    |    |    |    |    |    |    |    |\t\t|    |  . |    |    |    " +
+                "|  . |    |    |\r\n+----+----+----+----+----+----+----+----+\t\t+----+----+----+----+----+----+----+----+\r\n|    |    |  B |   " +
+                " |    |  B |    |    |\t\t|  . |    |    |    |    |    |  . |    |\r\n+----+----+----+----+----+----+----+----+ \t\t+----+----+---" +
+                "-+----+----+----+----+----+\n\nPress  to exit.");
         }
     }
 }

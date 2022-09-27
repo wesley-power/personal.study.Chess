@@ -30,14 +30,14 @@ namespace Chess
         }
 
         // Methods
-        public override bool IsValidMove((int Row, int Col) curPos, (int Row, int Col) newPos)
+        public override bool IsValidMove(GameManager gameManager, (int Row, int Col) curPos, (int Row, int Col) newPos)
         {
-            if (GameManager.IsUniversalInvalidMove(curPos, newPos))
+            if (gameManager.IsUniversalInvalidMove(curPos, newPos))
                 return false;
 
             if (newPos.Row - curPos.Row == 0 || newPos.Col - curPos.Col == 0)
             {
-                if (GameManager.IsStraightBlocked(curPos, newPos))
+                if (gameManager.IsStraightBlocked(curPos, newPos))
                     return false;
 
                 return true;
@@ -45,7 +45,7 @@ namespace Chess
 
             else if (Math.Abs(newPos.Row - curPos.Row) == Math.Abs(newPos.Col - curPos.Col))
             {
-                if (GameManager.IsDiagonalBlocked(curPos, newPos))
+                if (gameManager.IsDiagonalBlocked(curPos, newPos))
                     return false;
 
                 return true;
@@ -54,16 +54,16 @@ namespace Chess
             return false;
         }
 
-        public override bool CanMove((int Row, int Col) curPos)
+        public override bool CanMove(GameManager gameManager, (int Row, int Col) curPos)
         {
             foreach ((int RowMove, int ColMove) in queenMoves)
             {
                 (int Row, int Col) newPos = (curPos.Row + RowMove, curPos.Col + ColMove);
 
                 if (newPos.Row >= 0 && newPos.Row < 8 && newPos.Col >= 0 && newPos.Col < 8)
-                    if (IsValidMove(curPos, newPos))
+                    if (IsValidMove(gameManager, curPos, newPos))
                     {
-                        GameManager.UpdateBoard(curPos, newPos, true, out bool success);
+                        gameManager.UpdateBoard(curPos, newPos, true, out bool success);
                         if (success)
                             return true;
                     }
@@ -75,6 +75,30 @@ namespace Chess
         public override void FalsifyHasNotMoved()
         {
             HasNotMoved = false;
+        }
+
+        public static void Define()
+        {
+            Console.WriteLine("HELP: Learn about the Queen\n\nSymbol: Q\tMaterial Value: 9\n\nThe Queen is one of the most versatile pieces on the board, " +
+                "able to move in any straight or diagonal line for any unblocked distance. Each player starts the game with only one Queen." +
+                "The Queen is unable to hop over pieces and so cannot move past friendly pieces if they are in its path, " +
+                "but can capture the opponent's piece if it moves to the occupied square. The Queen cannot move past an opponent's " +
+                "piece. The Queen is usually protected in the early game and brought into play in the mid game.\n\n" +
+                "STARTING POSITIONS:\t\t\t\t\tPOSSIBLE MOVEMENT:\r\n+----+----+----+----+----+----+----+----+\t\t+----+----+----" +
+                "+----+----+----+----+----+\r\n|    |    |    |    |    |    |    |    |\t\t|    |    |    |  . |    |    |    |" +
+                "  . |\r\n+----+----+----+----+----+----+----+----+\t\t+----+----+----+----+----+----+----+----+\r\n|    |    | " +
+                "   |    |    |    |    |    |\t\t|  . |    |    |  . |    |    |  . |    |\r\n+----+----+----+----+----+----+--" +
+                "--+----+\t\t+----+----+----+----+----+----+----+----+\r\n|    |    |    |    |    |    |    |    |\t\t|    |  ." +
+                " |    |  . |    |  . |    |    |\r\n+----+----+----+----+----+----+----+----+\t\t+----+----+----+----+----+----" +
+                "+----+----+\r\n|    |    |    |    |    |    |    |    |\t\t|    |    |  . |  . |  . |    |    |    |\r\n+----+" +
+                "----+----+----+----+----+----+----+\t\t+----+----+----+----+----+----+----+----+\r\n|    |    |    |    |    | " +
+                "   |    |    |\t\t|  . |  . |  . |  Q |  . |  . |  . |  . |\r\n+----+----+----+----+----+----+----+----+\t\t+--" +
+                "--+----+----+----+----+----+----+----+\r\n|    |    |    |    |    |    |    |    |\t\t|    |    |  . |  . |  ." +
+                " |    |    |    |\r\n+----+----+----+----+----+----+----+----+\t\t+----+----+----+----+----+----+----+----+\r\n" +
+                "|    |    |    |    |    |    |    |    |\t\t|    |  . |    |  . |    |  . |    |    |\r\n+----+----+----+----+" +
+                "----+----+----+----+\t\t+----+----+----+----+----+----+----+----+\r\n|    |    |    |  Q |    |    |    |    |" +
+                "\t\t|  . |    |    |  . |    |    |  . |    |\r\n+----+----+----+----+----+----+----+----+ \t\t+----+----+----+--" +
+                "--+----+----+----+----+\r\n\nPress enter to exit.");
         }
 
     }

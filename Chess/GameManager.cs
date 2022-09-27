@@ -1,19 +1,22 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Media;
+using System.Net.NetworkInformation;
+using System.Runtime.CompilerServices;
+using System.Security.Policy;
 
 namespace Chess
 {
     internal class GameManager
     {
         // Properties
-        public static Piece[][] Board { get; private set; }
-        public static List<Piece> CapturedPieces { get; private set; }
-        public static List<PawnGhost> PawnGhosts { get; private set; }
-        public static King King1 { get; private set; }
-        public static King King2 { get; private set; }
-        public static int Turn { get; private set; }
-        public static int MaterialAdvantage { get; private set; }
+        public Piece[][] Board { get; private set; }
+        public List<Piece> CapturedPieces { get; private set; }
+        public List<PawnGhost> PawnGhosts { get; private set; }
+        public King King1 { get; private set; }
+        public King King2 { get; private set; }
+        public int Turn { get; private set; }
+        public int MaterialAdvantage { get; private set; }
 
         // Constructor
         public GameManager()
@@ -25,10 +28,11 @@ namespace Chess
             CapturedPieces = new List<Piece>();
             PawnGhosts = new List<PawnGhost>();
 
-            Turn = 1;
+            Turn = 0;
+            MaterialAdvantage = 0;
         }
 
-        public static void SetBoard()
+        public void SetBoard()
         {
             // Player 1 back rank
             Board[0][0] = new Rook(1);
@@ -64,7 +68,7 @@ namespace Chess
         }
 
 
-        public static void UpdateBoard((int Row, int Col) curPos, (int Row, int Col) newPos, bool onlyTest, out bool success)
+        public void UpdateBoard((int Row, int Col) curPos, (int Row, int Col) newPos, bool onlyTest, out bool success)
         {
             Piece oldSquare = Board[curPos.Row][curPos.Col];
             Piece newSquare = Board[newPos.Row][newPos.Col];
@@ -74,32 +78,6 @@ namespace Chess
             bool castleKingside = false;
             bool castleQueenside = false;
             King king = (oldSquare.Player == 1) ? King1 : King2;
-
-            // Remove "PawnGhost" en passant marker on player's next turn
-            if (PawnGhosts.Count > 0)
-            {
-                foreach (PawnGhost pawnGhost in PawnGhosts)
-                {
-                    pawnGhost.UpdateStatus();
-                }
-            }
-
-            // Indicate piece has moved. For: King, Rook castling, and Pawn first move. 
-            if (oldSquare.HasNotMoved)
-                oldSquare.FalsifyHasNotMoved();
-
-            // Create "PawnGhost" as en passant marker behind pawn after moving two spaces.
-            if (oldSquare.Type == "Pawn" && Math.Abs(newPos.Row - curPos.Row) == 2)
-            {
-                if (IsEnPassant(oldSquare.Player, newPos))
-                {
-                    Pawn pawn = (Pawn)oldSquare;
-                    int rank = (pawn.Player == 1) ? 2 : 5;
-                    Board[rank][curPos.Col] = new PawnGhost(pawn, (rank, curPos.Col), pawn.Player);
-                    pawn.AddPawnGhost(Board[rank][curPos.Col]);
-                    PawnGhosts.Add((PawnGhost)Board[rank][curPos.Col]);
-                }
-            }
 
             if (newSquare != null)
             {
@@ -160,68 +138,135 @@ namespace Chess
 
             // If player put their own king in check, undo the move.
             if (check || onlyTest)
-            {
-                Board[curPos.Row][curPos.Col] = saveOld;
-                Board[newPos.Row][newPos.Col] = saveNew;
-
-                if (Board[curPos.Row][curPos.Col].Type == "Pawn" && Math.Abs(newPos.Row - curPos.Row) == 2)
-                {
-                    int rank = (Board[curPos.Row][curPos.Col].Player == 1) ? 2 : 5;
-                    if (Board[rank][curPos.Col] != null)
-                        if (Board[rank][curPos.Col].Type == "PawnGhost")
-                            Board[rank][curPos.Col] = null;
-                }
-
-                if (castleKingside)
-                {
-                    Board[curPos.Row][2] = null;
-                    Board[curPos.Row][3] = null;
-                    king.UpdatePosition((curPos.Row, 4));
-                }
-                else if (castleQueenside)
-                {
-                    Board[curPos.Row][6] = null;
-                    Board[curPos.Row][5] = null;
-                    king.UpdatePosition((curPos.Row, 4));
-                }
-
-            }
+                UndoMove(curPos, newPos, king, saveOld, saveNew, castleKingside, castleQueenside);
 
             else
             {
-                if (capturedPiece != null)
+                Console.Clear();
+                View.PrintDisplay(this, false, this.Turn);
+                bool pendingReview = true;
+
+                while (pendingReview)
                 {
-                    if (saveNew.Type == "PawnGhost")
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.WriteLine("\nType Y and press enter to approve. N to undo.");
+                    Console.ForegroundColor = ConsoleColor.White;
+                    string reply = Console.ReadLine();
+                    reply = reply.ToUpper();
+
+                    if (reply == null)
+                        continue;
+
+                    if (reply != "Y" && reply != "N")
+                        continue;
+
+                    pendingReview = false;
+
+                    if (reply == "N")
                     {
-                        int dir = (Turn % 2 == 1) ? 1 : -1;
-                        Board[newPos.Row - dir][newPos.Col] = null;
+                        UndoMove(curPos, newPos, king, saveOld, saveNew, castleKingside, castleQueenside);
+                        Console.Clear();
+                        View.PrintDisplay(this, false, this.Turn);
+                        return;
                     }
 
-                    CapturedPieces.Add(capturedPiece);
-                    CapturedPieces.Sort();
-                    View.UpdateCapturedDisplay();
+                    else
+                    {
+                        Program.SetTurnComplete(true);
 
-                    int advantageSwing = (capturedPiece.Player == 1) ? -capturedPiece.Value : capturedPiece.Value;
+                        // King and Rook may only castle on first move. Pawns may only move two spaces on first move.
+                        if (saveOld.HasNotMoved)
+                            saveOld.FalsifyHasNotMoved();
 
-                    MaterialAdvantage += advantageSwing;
+                        // Create "PawnGhost" as en passant marker behind pawn after moving two spaces.
+                        if (saveOld.Type == "Pawn" && Math.Abs(newPos.Row - curPos.Row) == 2)
+                        {
+                            if (IsEnPassant(saveOld.Player, newPos))
+                            {
+                                Pawn pawn = (Pawn)saveOld;
+                                int rank = (pawn.Player == 1) ? 2 : 5;
+                                Board[rank][curPos.Col] = new PawnGhost(pawn, (rank, curPos.Col), pawn.Player);
+                                pawn.AddPawnGhost(Board[rank][curPos.Col]);
+                                PawnGhosts.Add((PawnGhost)Board[rank][curPos.Col]);
+                            }
+                        }
+
+                        if (capturedPiece != null)
+                        {
+                            if (saveNew.Type == "PawnGhost")
+                            {
+                                int dir = (Turn % 2 == 1) ? 1 : -1;
+                                Board[newPos.Row - dir][newPos.Col] = null;
+                            }
+
+                            CapturedPieces.Add(capturedPiece);
+                            CapturedPieces.Sort();
+
+                            int advantageSwing = (capturedPiece.Player == 1) ? -capturedPiece.Value : capturedPiece.Value;
+
+                            MaterialAdvantage += advantageSwing;
+                        }
+
+                        if ((newPos.Row == 7 || newPos.Row == 0) && Board[newPos.Row][newPos.Col] != null)
+                            if (Board[newPos.Row][newPos.Col].Type == "Pawn")
+                            {
+                                Pawn pawn = (Pawn)Board[newPos.Row][newPos.Col];
+                                pawn.Promote(this, newPos);
+                            }
+
+                        // Remove "PawnGhost" en passant marker on player's next turn
+                        if (PawnGhosts.Count > 0)
+                        {
+                            int player = (Turn % 2 == 1) ? 1 : 2;
+
+                            for (int i = 0; i < PawnGhosts.Count; i++)
+                            {
+                                if (PawnGhosts[i].Player != player)
+                                    PawnGhosts[i].UpdateStatus(this);
+                            }
+                        }
+                    }
                 }
-
-                if ((newPos.Row == 7 || newPos.Row == 0) && Board[newPos.Row][newPos.Col] != null)
-                    if (Board[newPos.Row][newPos.Col].Type == "Pawn")
-                    {
-                        View.PrintBoard();
-                        Pawn pawn = (Pawn)Board[newPos.Row][newPos.Col];
-                        pawn.Promote(newPos);
-                    }
             }
         }
 
-        public static void UpdateBoard((int Row, int Col) curPos, (int Row, int Col) newPos, bool onlyTest)
+        public void UpdateBoard((int Row, int Col) curPos, (int Row, int Col) newPos, bool onlyTest)
         {
             UpdateBoard(curPos, newPos, onlyTest, out _);
         }
 
-        public static void EvaluateCheck()
+        public void UndoMove((int Row, int Col) curPos, (int Row, int Col) newPos, 
+            King king, Piece saveOld, Piece saveNew, bool castleKingside, bool castleQueenside)
+        {
+            Board[curPos.Row][curPos.Col] = saveOld;
+            Board[newPos.Row][newPos.Col] = saveNew;
+
+            if (Board[curPos.Row][curPos.Col].Type == "Pawn" && Math.Abs(newPos.Row - curPos.Row) == 2)
+            {
+                int rank = (Board[curPos.Row][curPos.Col].Player == 1) ? 2 : 5;
+                if (Board[rank][curPos.Col] != null)
+                    if (Board[rank][curPos.Col].Type == "PawnGhost")
+                        Board[rank][curPos.Col] = null;
+            }
+
+            if (castleKingside)
+            {
+                Board[curPos.Row][2] = null;
+                Board[curPos.Row][3] = null;
+                king.UpdatePosition((curPos.Row, 4));
+            }
+            else if (castleQueenside)
+            {
+                Board[curPos.Row][6] = null;
+                Board[curPos.Row][5] = null;
+                king.UpdatePosition((curPos.Row, 4));
+            }
+
+            Console.Clear();
+            View.PrintDisplay(this, false, this.Turn);
+        }
+
+        public void EvaluateCheck()
         {
             King king = (Turn % 2 == 1) ? King2 : King1;
 
@@ -317,7 +362,7 @@ namespace Chess
             }
         }
 
-        public static bool IsStalemate()
+        public void EvaluateStaleMate()
         {
             int player = (Turn % 2 == 1) ? 2 : 1;
 
@@ -333,17 +378,17 @@ namespace Chess
 
                     else
                     {
-                        if (Board[i][j].CanMove((i, j)))
-                            return false;
+                        if (Board[i][j].CanMove(this, (i, j)))
+                            return;
                     }
                 }
             }
 
-            return true;
+            StaleMate();
         }
         
 
-        public static bool IsUniversalInvalidMove((int Row, int Col) curPos, (int Row, int Col) newPos)
+        public bool IsUniversalInvalidMove((int Row, int Col) curPos, (int Row, int Col) newPos)
         {
             // These are separate IF statements because I intend to add error messages
 
@@ -368,30 +413,20 @@ namespace Chess
             return false;
         }
 
-        public static bool IsValidPiece((int Row, int Col) curPos)
-        {
-            // Requested move of other player's piece.
-            if ((Board[curPos.Row][curPos.Col].Player == 1 && Turn % 2 == 0)
-                || (Board[curPos.Row][curPos.Col].Player == 2 && Turn % 2 == 1))
-                return false;
-
-            else
-                return true;
-        }
-
-        public static bool IsDiagonalBlocked((int Row, int Col) curPos, (int Row, int Col) newPos)
+        public bool IsDiagonalBlocked((int Row, int Col) curPos, (int Row, int Col) newPos)
         {
             int directionHor = (newPos.Row > curPos.Row) ? 1 : -1;
             int directionVer = (newPos.Col > curPos.Col) ? 1 : -1;
 
             for (int i = 1; i < Math.Abs(newPos.Row - curPos.Row); i++)
                 if (Board[curPos.Row + (i * directionHor)][curPos.Col + (i * directionVer)] != null)
-                    return true;
+                    if (Board[curPos.Row + (i * directionHor)][curPos.Col + (i * directionVer)].Type != "PawnGhost")
+                        return true;
 
             return false;
         }
 
-        public static bool IsStraightBlocked((int Row, int Col) curPos, (int Row, int Col) newPos)
+        public bool IsStraightBlocked((int Row, int Col) curPos, (int Row, int Col) newPos)
         {
             if (newPos.Row != curPos.Row)
             {
@@ -399,7 +434,8 @@ namespace Chess
                 int gap = Math.Abs(newPos.Row - curPos.Row);
                 for (int i = 1; i < gap; i++)
                     if (Board[curPos.Row + (i * direction)][curPos.Col] != null)
-                        return true;
+                        if (Board[curPos.Row + (i * direction)][curPos.Col].Type != "PawnGhost")
+                            return true;
             }
             else
             {
@@ -407,13 +443,14 @@ namespace Chess
                 int gap = Math.Abs(newPos.Col - curPos.Col);
                 for (int i = 1; i < gap; i++)
                     if (Board[curPos.Row][curPos.Col + (i * direction)] != null)
-                        return true;
+                        if (Board[curPos.Row][curPos.Col + (i * direction)].Type != "PawnGhost")
+                            return true;
             }
 
             return false;
         }
 
-        public static bool IsEnPassant(int player, (int Row, int Col) newPos)
+        public bool IsEnPassant(int player, (int Row, int Col) newPos)
         {
             int rank = (player == 1) ? 3 : 4;
 
@@ -436,7 +473,7 @@ namespace Chess
 
         // Can the other player move to this square?
         // Has overload method that does not out enemyPosition.
-        public static bool IsReachable(int player, (int Row, int Col) position, out (int Row, int Col) enemyPosition)
+        public bool IsReachable(int player, (int Row, int Col) position, out (int Row, int Col) enemyPosition)
         {
             int row = position.Row;
             int col = position.Col;
@@ -529,7 +566,7 @@ namespace Chess
 
                     if (isEnemy)
                     {
-                        if (IsQueenOrBishop(row + i, col + i) || IsKingOrPawn(row + i, col + i, player, 1, i))
+                        if (IsQueenOrBishop(row + i, col + i) || IsPawn(row + i, col + i, player, 1, i))
                         {
                             enemyPosition = ((row + i), (col + i));
                             return true;
@@ -544,7 +581,7 @@ namespace Chess
 
                     if (isEnemy)
                     {
-                        if (IsQueenOrBishop(row - i, col + i) || IsKingOrPawn(row - i, col + i, player, 2, i))
+                        if (IsQueenOrBishop(row - i, col + i) || IsPawn(row - i, col + i, player, 2, i))
                         {
                             enemyPosition = ((row - i), (col + i));
                             return true;
@@ -560,7 +597,7 @@ namespace Chess
 
                     if (isEnemy)
                     {
-                        if (IsQueenOrBishop(row - i, col - i) || IsKingOrPawn(row - i, col - i, player, 2, i))
+                        if (IsQueenOrBishop(row - i, col - i) || IsPawn(row - i, col - i, player, 2, i))
                         {
                             enemyPosition = ((row - i), (col - i));
                             return true;
@@ -575,7 +612,7 @@ namespace Chess
 
                     if (isEnemy)
                     {
-                        if ((IsQueenOrBishop(row + i, col - i)) || IsKingOrPawn(row + i, col - i, player, 1, i))
+                        if ((IsQueenOrBishop(row + i, col - i)) || IsPawn(row + i, col - i, player, 1, i))
                         {
                             enemyPosition = ((row + i), (col - i));
                             return true;
@@ -588,12 +625,12 @@ namespace Chess
             return false;
         }
 
-        public static bool IsReachable(int player, (int Row, int Col) position)
+        public bool IsReachable(int player, (int Row, int Col) position)
         {
             return IsReachable(player, position, out _);
         }
 
-        public static bool IsKnight(int row, int col, int player)
+        public bool IsKnight(int row, int col, int player)
         {
             if (row >= 0 && row < 8 && col >= 0 && col < 8)
                 if (Board[row][col] != null)
@@ -603,20 +640,23 @@ namespace Chess
             return false;
         }
 
-        public static bool CheckSquare(int row, int col, int player, ref bool isEnemy)
+        public bool CheckSquare(int row, int col, int player, ref bool isEnemy)
         {
             if (Board[row][col] != null)
             {
-                if (Board[row][col].Player != player)
+                if (Board[row][col].Type != "PawnGhost")
                 {
-                    isEnemy = true;
-                    return true;
+                    if (Board[row][col].Player != player)
+                    {
+                        isEnemy = true;
+                        return true;
 
-                }
-                else if (Board[row][col].Player == player)
-                {
-                    isEnemy = false;
-                    return true; // friendly piece blocks way, end search
+                    }
+                    else if (Board[row][col].Player == player)
+                    {
+                        isEnemy = false;
+                        return true; // friendly piece blocks way, end search
+                    }
                 }
             }
 
@@ -624,7 +664,7 @@ namespace Chess
             return false;
         }
 
-        public static bool IsQueenOrBishop(int row, int col)
+        public bool IsQueenOrBishop(int row, int col)
         {
             if ((Board[row][col].Type == "Bishop" || Board[row][col].Type == "Queen"))
                 return true;
@@ -632,14 +672,14 @@ namespace Chess
             return false;
         }
 
-        public static bool IsKingOrPawn(int row, int col, int player, int reqPlayer, int i)
+        public bool IsPawn(int row, int col, int player, int reqPlayer, int i)
         {
             if (i == 1)
             {
-                if ((Board[row][col].Type == "King"))
-                    return true;
+                /*if ((Board[row][col].Type == "King"))
+                    return true;*/
 
-                else if (player == reqPlayer)
+                if (player == reqPlayer)
                     if (Board[row][col].Type == "Pawn")
                         return true;
             }
@@ -647,7 +687,7 @@ namespace Chess
             return false;
         }
 
-        public static bool IsQueenOrRook(int row, int col)
+        public bool IsQueenOrRook(int row, int col)
         {
             if (Board[row][col].Type == "Rook" || Board[row][col].Type == "Queen")
                 return true;
@@ -655,21 +695,72 @@ namespace Chess
             return false;
         }
 
-        public static void NextTurn()
+        public void NextTurn()
         {
             Turn++;
         }
 
-        public static void CheckMate()
+        public void CopyGameManager(GameManager other)
         {
-            Console.WriteLine("\n\nCheckmate!");
-            Console.ReadLine();
+            this.Turn = other.Turn;
+            this.MaterialAdvantage = other.MaterialAdvantage;
+
+            foreach (var piece in other.CapturedPieces)
+                this.CapturedPieces.Add(piece);
+
+            for (int i = 0; i < 8; i++)
+                for (int j = 0; j < 8; j++)
+                {
+                    if (other.Board[i][j] == null)
+                    {
+                        this.Board[i][j] = null;
+                        continue;                            
+                    }
+
+                    int player = (other.Board[i][j].Player == 1) ? 1 : 2;
+
+                    if (other.Board[i][j].Type == "Pawn")
+                        this.Board[i][j] = new Pawn(player);
+
+                    else if (other.Board[i][j].Type == "Rook")
+                        this.Board[i][j] = new Rook(player);
+
+                    else if (other.Board[i][j].Type == "Knight")
+                        this.Board[i][j] = new Knight(player);
+
+                    else if (other.Board[i][j].Type == "Bishop")
+                        this.Board[i][j] = new Bishop(player);
+
+                    else if (other.Board[i][j].Type == "Queen")
+                        this.Board[i][j] = new Queen(player);
+
+                    else if (other.Board[i][j].Type == "King")
+                        this.Board[i][j] = new King(player);
+
+                    else
+                        this.Board[i][j] = null;                 
+                }
         }
 
-        public static void StaleMate()
+        public void CheckMate()
         {
-            Console.WriteLine("\n\nDraw!");
-            Console.ReadLine();
+            Program.EndMatch("CHECKMATE");
+            Console.WriteLine("\n\nCheckmate!"); // debug
+            Console.ReadLine(); // debug
+        }
+
+        public void StaleMate()
+        {
+            Program.EndMatch("STALEMATE");
+            Console.WriteLine("\n\nStalemate!"); // debug
+            Console.ReadLine(); // debug
+        }
+
+        public void Draw()
+        {
+            Program.EndMatch("DRAW");
+            Console.WriteLine("\n\nDraw!"); // debug
+            Console.ReadLine(); // debug
         }
     }
 }

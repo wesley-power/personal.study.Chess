@@ -26,10 +26,10 @@ namespace Chess
         }
 
         // Methods
-        public virtual bool IsValidMove((int Row, int Col) curPos, (int Row, int Col) newPos)
+        public virtual bool IsValidMove(GameManager gameManager, (int Row, int Col) curPos, (int Row, int Col) newPos)
         { return false; } // default value, overridden by superclass
 
-        public virtual bool CanMove((int Row, int Col) curPos)
+        public virtual bool CanMove(GameManager gameManager, (int Row, int Col) curPos)
         { return false; } // default value, overridden by superclass
 
         public virtual void FalsifyHasNotMoved()

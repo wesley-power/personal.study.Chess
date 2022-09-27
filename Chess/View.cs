@@ -9,25 +9,36 @@ namespace Chess
     internal static class View
     {
         // Properties
-        public static string Captured1 { get; private set; }
-        public static string Captured2 { get; private set; }   
         public static string Remarks { get; private set; }
 
+        public static List<GameManager> PreviousTurns { get; set; }
 
         // Methods
-        public static void PrintDisplay()
+        public static void PrintDisplay(GameManager gameManager, bool isPreview, int currentTurn)
         {
-            (int First, int Second) = (GameManager.Turn % 2 == 1) ? (2, 1) : (1, 2);
+            (int First, int Second) order; // default value 
 
-            View.PrintCapturedDisplay(First);
+            if (isPreview)
+            {
+                (order.First, order.Second) = (currentTurn % 2 == 1) ? (2, 1) : (1, 2);
+            }
 
-            View.PrintBoard();
+            else
+            {
+                (order.First, order.Second) = (gameManager.Turn % 2 == 1) ? (2, 1) : (1, 2);
+            }
 
-            View.PrintCapturedDisplay(Second);
+            Console.WriteLine("\n\n\n");
 
-            Console.WriteLine("TURN " + GameManager.Turn);
+            PrintCapturedDisplay(gameManager, order.First);
 
-            if (Second == 1)
+            PrintBoard(gameManager, isPreview, currentTurn);
+
+            PrintCapturedDisplay(gameManager, order.Second);
+
+            Console.WriteLine("TURN " + gameManager.Turn);
+
+            if (order.Second == 1)
             {
                 Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.Write("BLUE");
@@ -42,13 +53,20 @@ namespace Chess
             Console.Write(" to move!\n\n\n");
         }
 
-        public static void PrintBoard()
+        public static void PrintBoard(GameManager gameManager, bool isPreview, int currentTurn)
         {
             string file1 = "\t       A    B    C    D    E    F    G    H";
             string file2 = "\t       H    G    F    E    D    C    B    A";
             string rowBorder = "\t    +----+----+----+----+----+----+----+----+";
+            int player;
 
-            if (GameManager.Turn % 2 == 1)
+            if (isPreview)
+                player = (currentTurn % 2 == 1) ? 1 : 2;
+            else
+                player = (gameManager.Turn % 2 == 1) ? 1 : 2;
+
+
+            if (player == 1)
             {
                 Console.WriteLine(file1 + "\n");
                 Console.WriteLine(rowBorder);
@@ -59,7 +77,7 @@ namespace Chess
 
                     for (int j = 0; j < 8; j++)
                     {
-                        Piece piece = GameManager.Board[i][j];
+                        Piece piece = gameManager.Board[i][j];
 
                         if (j == 0)
                             Console.Write("|  ");
@@ -79,7 +97,7 @@ namespace Chess
                 Console.WriteLine("\n" + file1 + "\n");
             }
 
-            else if (GameManager.Turn % 2 == 0)
+            else if (player == 2)
             {
                 Console.WriteLine(file2 + "\n");
                 Console.WriteLine(rowBorder);
@@ -90,7 +108,7 @@ namespace Chess
 
                     for (int j = 7; j >= 0; j--)
                     {
-                        Piece piece = GameManager.Board[i][j];
+                        Piece piece = gameManager.Board[i][j];
 
                         if (j == 7)
                             Console.Write("|  ");
@@ -111,14 +129,19 @@ namespace Chess
             }
         }
 
-        public static void PrintCapturedDisplay(int player)
+        public static void PrintCapturedDisplay(GameManager gameManager, int player)
         {
             if (player == 1)
             {
                 Console.ForegroundColor = ConsoleColor.Cyan;
                 Console.Write("Captured: ");
                 Console.ForegroundColor = ConsoleColor.Red;
-                Console.Write(Captured1 + "\n\n");
+
+                foreach (Piece piece in gameManager.CapturedPieces)
+                    if (piece.Player == 2)
+                        Console.Write(piece.Symbol + " ");
+
+                Console.Write("\n\n");
                 Console.ForegroundColor = ConsoleColor.White;
             }
             else
@@ -126,7 +149,12 @@ namespace Chess
                 Console.ForegroundColor = ConsoleColor.Red;
                 Console.Write("Captured: ");
                 Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.Write(Captured2 + "\n\n");
+
+                foreach (Piece piece in gameManager.CapturedPieces)
+                    if (piece.Player == 1)
+                        Console.Write(piece.Symbol + " ");
+
+                Console.Write("\n\n");
                 Console.ForegroundColor = ConsoleColor.White;
             }
         }
@@ -146,25 +174,6 @@ namespace Chess
             Console.ForegroundColor = ConsoleColor.White;
         }
 
-        public static void UpdateCapturedDisplay()
-        {
-            string _captured1 = "";
-            string _captured2 = "";
-
-            foreach (var piece in GameManager.CapturedPieces)
-            {
-                if (piece.Player == 1)
-                    _captured2 += piece.Symbol + " ";
-
-                else
-                    _captured1 += piece.Symbol + " ";
-
-                Captured1 = _captured1;
-                Captured2 = _captured2;
-            }
-
-        }
-
         public static void UpdateRemarks(int top, string remark)
         {
             Console.SetCursorPosition(0, top - 1);
@@ -174,6 +183,80 @@ namespace Chess
             Console.ForegroundColor = ConsoleColor.Yellow;
             Console.Write("Remarks: " + remark);
             Console.ForegroundColor = ConsoleColor.White;
+        }
+
+        public static void PrintTitleScreen()
+        {
+            Console.WriteLine("\n\n\n                                                   _:_\r\n" +
+                "                                                  '-.-'\r\n             " +
+                "                            ()      __.'.__\r\n                         " +
+                "             .-:--:-.  |_______|\r\n                               ()   " +
+                "   \\____/    \\=====/\r\n                               /\\      {====}" +
+                "     )___(\r\n                    (\\=,      //\\\\      )__(     /_____" +
+                "\\\r\n    __    |'-'-'|  //  .\\    (    )    /____\\     |   |\r\n   / " +
+                " \\   |_____| (( \\_  \\    )__(      |  |      |   |\r\n   \\__/    |==" +
+                "=|   ))  `\\_)  /____\\     |  |      |   |\r\n  /____\\   |   |  (/    " +
+                " \\    |  |      |  |      |   |\r\n   |  |    |   |   | _.-'|    |  |  " +
+                "    |  |      |   |\r\n   |__|    )___(    )___(    /____\\    /____\\  " +
+                "  /_____\\\r\n  (====)  (=====)  (=====)  (======)  (======)  (=======)\r\n" +
+                "  }===={  }====={  }====={  }======{  }======{  }======={\r\n (______)(_" +
+                "______)(_______)(________)(________)(_________)");
+
+            Console.Write("\n\nWelcome to Chess!\n\n" +
+                "1. Play\n" +
+                "2. Help\n");
+
+            int top = Console.CursorTop;
+
+            while (true)
+            {
+                Console.Write("Select and enter a number option: ");
+                string select = Console.ReadLine();
+
+                if (Int32.TryParse(select, out int result))
+                {
+                    if (result == 1)
+                        break;
+
+                    else if (result == 2)
+                    {
+                        Reference.OpenMenu();
+                        break;
+                    }
+                }
+
+                Console.SetCursorPosition(0, top);
+                Console.Write("                                                                                                                    ");
+                Console.SetCursorPosition(0, top);
+            }
+        }
+
+        public static void PrintPreviousTurns(GameManager gameManager)
+        {
+            bool underReview = true;
+            int currentItem = PreviousTurns.Count - 1;
+
+            while (underReview)
+            {
+                Console.Clear();
+                PrintDisplay(PreviousTurns[currentItem], true, gameManager.Turn);
+
+                Console.Write("Enter 1 to view previous. Enter 2 to view next. Enter \"EXIT\" to exit:  ");
+                string command = Console.ReadLine();
+                command = command.ToUpper();
+
+                if (command == "EXIT")
+                    underReview = false;
+
+                if (command != "1" && command != "2")
+                    continue;
+
+                if (command == "1" && currentItem - 1 >= 0)
+                    currentItem--;
+
+                else if (command == "2" && currentItem + 1 < PreviousTurns.Count)
+                    currentItem++;
+            }
         }
     }
 }

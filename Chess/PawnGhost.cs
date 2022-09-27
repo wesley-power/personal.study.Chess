@@ -15,7 +15,6 @@ namespace Chess
         public new int Player { get; protected set; }
         public (int Row, int Col) Position { get; protected set; }
         public Pawn Pawn { get; protected set; }
-        public int Counter { get; protected set; }
 
         // Constructor
         public PawnGhost(Pawn pawn, (int Row, int Pos) position, int player) : base(player)
@@ -26,17 +25,14 @@ namespace Chess
             Player = player;
             Symbol = Reference.pieceSymbol["PawnGhost"];
             Value = 0;
-            Counter = 1;
         }
 
-        public void UpdateStatus()
+        public void UpdateStatus(GameManager gameManager)
         {
-            Counter -= 1;
+            gameManager.PawnGhosts.Remove(this);
 
-            if (Counter == 0)
-            {
-                GameManager.Board[Position.Row][Position.Col] = null;
-            }
+            if (gameManager.Board[Position.Row][Position.Col].Type == "PawnGhost")
+                gameManager.Board[Position.Row][Position.Col] = null;
         }
     }
 }
