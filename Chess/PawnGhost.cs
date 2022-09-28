@@ -7,6 +7,14 @@ using System.Threading.Tasks;
 
 namespace Chess
 {
+    /* Chess allows for "en passant" captures. This occurs when a player advances
+     * a pawn (p) to the opposite half of the board (rank 5 or 4), and the opposing player
+     * moves a new pawn (b) two spaces forward, such that p and b are side by side. p may 
+     * move forward and diagonally behind b to capture b "en passant". En passant captures 
+     * must be executed immediately or the option has passed. Review Pawn.Define() for more 
+     * details. This  class/object creates a marker (aka "PawnGhost") when appropriate so 
+     * that en passant captures may be checked and executed.*/
+
     internal class PawnGhost : Pawn
     {
         // Properties

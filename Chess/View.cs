@@ -14,15 +14,20 @@ namespace Chess
         public static List<GameManager> PreviousTurns { get; set; }
 
         // Methods
-        public static void PrintDisplay(GameManager gameManager, bool isPreview, int currentTurn)
+        public static void PrintDisplay(GameManager gameManager, bool isReview, int currentTurn)
         {
-            (int First, int Second) order; // default value 
+            (int First, int Second) order;
 
-            if (isPreview)
+            /* When a player is review prior turns, they do so from their own perspective.
+             * The board does not flip as they cycle through turns.*/
+            if (isReview)
             {
                 (order.First, order.Second) = (currentTurn % 2 == 1) ? (2, 1) : (1, 2);
             }
 
+            /* If not under review, the program determines which way the board should be 
+             * flipped depending upon what turn it is. The below should only be executed 
+             * when the main board (refer to Program) is passed as gameManager. */
             else
             {
                 (order.First, order.Second) = (gameManager.Turn % 2 == 1) ? (2, 1) : (1, 2);
@@ -32,7 +37,7 @@ namespace Chess
 
             PrintCapturedDisplay(gameManager, order.First);
 
-            PrintBoard(gameManager, isPreview, currentTurn);
+            PrintBoard(gameManager, isReview, currentTurn);
 
             PrintCapturedDisplay(gameManager, order.Second);
 
@@ -53,14 +58,14 @@ namespace Chess
             Console.Write(" to move!\n\n\n");
         }
 
-        public static void PrintBoard(GameManager gameManager, bool isPreview, int currentTurn)
+        public static void PrintBoard(GameManager gameManager, bool isReview, int currentTurn)
         {
             string file1 = "\t       A    B    C    D    E    F    G    H";
             string file2 = "\t       H    G    F    E    D    C    B    A";
             string rowBorder = "\t    +----+----+----+----+----+----+----+----+";
             int player;
 
-            if (isPreview)
+            if (isReview)
                 player = (currentTurn % 2 == 1) ? 1 : 2;
             else
                 player = (gameManager.Turn % 2 == 1) ? 1 : 2;
@@ -233,10 +238,9 @@ namespace Chess
 
         public static void PrintPreviousTurns(GameManager gameManager)
         {
-            bool underReview = true;
             int currentItem = PreviousTurns.Count - 1;
 
-            while (underReview)
+            while (true)
             {
                 Console.Clear();
                 PrintDisplay(PreviousTurns[currentItem], true, gameManager.Turn);
@@ -246,7 +250,7 @@ namespace Chess
                 command = command.ToUpper();
 
                 if (command == "EXIT")
-                    underReview = false;
+                    break;
 
                 if (command != "1" && command != "2")
                     continue;
