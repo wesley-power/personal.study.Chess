@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Chess
 {
@@ -67,12 +63,12 @@ namespace Chess
 
         public static void Define()
         {
-            Console.WriteLine("HELP: Learn about the Knight\n\nSymbol: N\tMaterial Value: 3\nThe Knight is unique as it is the only piece able to hop over all other pieces. " +
+            Console.WriteLine("HELP: Learn about the Knight\n\nSymbol: N\tMaterial Value: 3\n\nThe Knight is unique as it is the only piece able to hop over all other pieces. " +
                 "The Knight's movement is also uniquely \"L\" shaped. Its move is always two straight, non-diagonal squares in any direction, " +
                 "followed by a one square movement that is perpendicular to the previous movement. If it lands on a square occupied by an " +
                 "a piece of the opposing player, the Knight captures that piece. Each player starts the game with two Knights on the back rank, " +
-                "one square in from the outermost edge. It is frequently moved in the early game as it is quickly able to control a large" +
-                "number of squares in the center of the boarrd.\n\n" +
+                "one square in from the outermost edge. It is frequently moved in the early game as it is quickly able to control a large " +
+                "number of squares in the center of the board.\n\n" +
                 "STARTING POSITIONS:\t\t\t\t\tPOSSIBLE MOVEMENT:\r\n+----+----+----+----+----+----+----+----+\t\t+----+----+----+----+----+" +
                 "----+----+----+\r\n|    |    |    |    |    |    |    |    |\t\t|    |    |    |    |    |    |    |    |\r\n+----+----+--" +
                 "--+----+----+----+----+----+\t\t+----+----+----+----+----+----+----+----+\r\n|    |    |    |    |    |    |    |    |\t\t" +

@@ -1,9 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Media;
-using System.Net.NetworkInformation;
-using System.Runtime.CompilerServices;
-using System.Security.Policy;
 
 namespace Chess
 {

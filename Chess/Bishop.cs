@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Chess
 {
@@ -88,7 +84,7 @@ namespace Chess
                 "----+----+\t\t+----+----+----+----+----+----+----+----+\r\n|    |    |    |    |    |    |    |    |\t\t|    |  . |    |    |    " +
                 "|  . |    |    |\r\n+----+----+----+----+----+----+----+----+\t\t+----+----+----+----+----+----+----+----+\r\n|    |    |  B |   " +
                 " |    |  B |    |    |\t\t|  . |    |    |    |    |    |  . |    |\r\n+----+----+----+----+----+----+----+----+ \t\t+----+----+---" +
-                "-+----+----+----+----+----+\n\nPress  to exit.");
+                "-+----+----+----+----+----+\n\nPress enter to exit.");
         }
     }
 }

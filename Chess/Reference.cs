@@ -1,9 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.ComponentModel.Design;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Chess
 {
@@ -17,7 +13,7 @@ namespace Chess
             { "Knight", "N" },
             { "Rook", "R" },
             { "Pawn", "p" },
-            { "PawnGhost", "." }
+            { "PawnGhost", " " }
         };
 
         public static void OpenMenu()
