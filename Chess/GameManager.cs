@@ -267,6 +267,12 @@ namespace Chess
                 Board[curPos.Row][5] = null;
                 king.UpdatePosition((curPos.Row, 4));
             }
+            else
+            {
+                if (Board[curPos.Row][curPos.Col] != null)
+                    if (Board[curPos.Row][curPos.Col].Type == "King")
+                        king.UpdatePosition(curPos);
+            }
 
             Console.Clear();
             View.PrintDisplay(this, false, this.Turn);

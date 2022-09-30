@@ -99,7 +99,7 @@ namespace Chess
 
             while (symbol != "Q" && symbol != "R" && symbol != "B" && symbol != "N")
             {
-                Program.PrintRemarks();
+                View.PrintRemarks();
                 Console.SetCursorPosition(0, Program.InputRow);
                 Console.WriteLine("                                                                                                                                \n" +
                     "                                                                                                                                              \n" +

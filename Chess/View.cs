@@ -279,6 +279,35 @@ namespace Chess
             }
         }
 
+        public static void PrintEndScreen(GameManager gameManager)
+        {
+            Console.Clear();
+            View.PrintDisplay(gameManager, false, gameManager.Turn);
+
+            Console.SetCursorPosition(0, Program.InputRow);
+            Console.ForegroundColor = ConsoleColor.Green;
+            Console.Write(Program.EndReason + "! ");
+
+            if (Program.Loser == 2)
+            {
+                Console.ForegroundColor = ConsoleColor.Cyan;
+                Console.Write("BLUE ");
+            }
+            else if (Program.Loser == 1)
+            {
+                Console.ForegroundColor = ConsoleColor.Red;
+                Console.Write("RED ");
+            }
+            else
+            {
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.Write("No one ");
+            }
+
+            Console.ForegroundColor = ConsoleColor.White;
+            Console.Write("wins!\n\n");
+        }
+
         public static void PrintPreviousTurns(GameManager gameManager)
         {
             int currentItem = PreviousTurns.Count - 1;
@@ -304,6 +333,32 @@ namespace Chess
                 else if (command == "2" && currentItem + 1 < PreviousTurns.Count)
                     currentItem++;
             }
+        }
+
+        public static void PrintRemarks()
+        {
+            Console.ForegroundColor = ConsoleColor.Yellow;
+            Console.SetCursorPosition(0, Program.InputRow - 1);
+            if (View.Remarks == null)
+                Console.Write("                                                                                        " +
+                    "                                                                                                  ");
+            else
+                Console.Write("Remarks: " + View.Remarks);
+            Console.ForegroundColor = ConsoleColor.White;
+        }
+
+        public static void PrintInstructions(int pass)
+        {
+            Console.SetCursorPosition(0, Program.InputRow + 1);
+            Console.WriteLine("                                                                                                                             ");
+            Console.WriteLine("                                                                                                                             ");
+            Console.SetCursorPosition(0, Program.InputRow + 1);
+            Console.WriteLine("Enter LetterNumber of square. Example: E2");
+
+            if (pass == 1)
+                Console.WriteLine("Enter HELP for menus, REVIEW to look at previous turns, DRAW to offer draw, RESIGN to resign.");
+            else
+                Console.WriteLine("Enter CANCEL to reselect piece, HELP for menus, REVIEW to look at previous turns, DRAW to offer draw, RESIGN to resign.");
         }
 
         public static void InitializePreviousTurns()

@@ -89,7 +89,7 @@ namespace Chess
                     }
                 }
 
-                PrintEndScreen(main);
+                View.PrintEndScreen(main);
 
                 while (true)
                 {
@@ -106,7 +106,7 @@ namespace Chess
                     {
                         View.PrintPreviousTurns(main);
                         Console.Clear();
-                        PrintEndScreen(main);
+                        View.PrintEndScreen(main);
                     }
 
                     else if (reply == "Y")
@@ -159,9 +159,9 @@ namespace Chess
                     repeat = true;
                     int player = (gameManager.Turn % 2 == 1) ? 1 : 2;
 
-                    PrintRemarks();
+                    View.PrintRemarks();
 
-                    PrintInstructions(1);
+                    View.PrintInstructions(1);
 
                     Console.SetCursorPosition(0, InputRow);
                     Console.Write("                                                                                           ");
@@ -205,9 +205,9 @@ namespace Chess
 
                 while (moveTo.Col == -1 || moveTo.Row == -1 || moveTo == (-2, -2))
                 {
-                    PrintRemarks();
+                    View.PrintRemarks();
 
-                    PrintInstructions(2);
+                    View.PrintInstructions(2);
 
                     Console.SetCursorPosition(0, InputRow);
                     Console.ForegroundColor = ConsoleColor.Green;
@@ -352,32 +352,6 @@ namespace Chess
             return (row, col);
         }
 
-        public static void PrintRemarks()
-        {
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.SetCursorPosition(0, InputRow - 1);
-            if (View.Remarks == null)
-                Console.Write("                                                                                        " +
-                    "                                                                                                  ");
-            else
-                Console.Write("Remarks: " + View.Remarks);
-            Console.ForegroundColor = ConsoleColor.White;
-        }
-
-        public static void PrintInstructions(int pass)
-        {
-            Console.SetCursorPosition(0, InputRow + 1);
-            Console.WriteLine("                                                                                                                             ");
-            Console.WriteLine("                                                                                                                             ");
-            Console.SetCursorPosition(0, InputRow + 1);
-            Console.WriteLine("Enter LetterNumber of square. Example: E2");
-
-            if (pass == 1)
-                Console.WriteLine("Enter HELP for menus, REVIEW to look at previous turns, DRAW to offer draw, RESIGN to resign.");
-            else
-                Console.WriteLine("Enter CANCEL to reselect piece, HELP for menus, REVIEW to look at previous turns, DRAW to offer draw, RESIGN to resign.");
-        }
-
         public static void SetTurnComplete(bool value)
         {
             IsTurnComplete = value;
@@ -405,7 +379,7 @@ namespace Chess
 
             while (true)
             {
-                PrintRemarks();
+                View.PrintRemarks();
 
                 Console.SetCursorPosition(0, InputRow);
                 Console.Write("\"                                                                                                                                       ");
@@ -469,7 +443,7 @@ namespace Chess
 
             while (true)
             {
-                PrintRemarks();
+                View.PrintRemarks();
 
                 Console.SetCursorPosition(0, InputRow);
                 Console.Write("\"                                                                                                                                       ");
@@ -494,35 +468,6 @@ namespace Chess
             Loser = loser;
             EndReason = endReason;
             MatchOn = false;
-        }
-
-        public static void PrintEndScreen(GameManager gameManager)
-        {
-            Console.Clear();
-            View.PrintDisplay(gameManager, false, gameManager.Turn);
-
-            Console.SetCursorPosition(0, InputRow);
-            Console.ForegroundColor = ConsoleColor.Green;
-            Console.Write(EndReason + "! ");
-
-            if (Loser == 2)
-            {
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.Write("BLUE ");
-            }
-            else if (Loser == 1)
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Write("RED ");
-            }
-            else
-            {
-                Console.ForegroundColor = ConsoleColor.White;
-                Console.Write("No one ");
-            }
-
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.Write("wins!\n\n");
         }
     }
 }
