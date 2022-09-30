@@ -94,18 +94,31 @@ namespace Chess
         public void Promote(GameManager gameManager, (int Row, int Col) position)
         {
             string symbol = "";
+            Console.SetCursorPosition(0, Program.inputRow - 1);
+            Console.WriteLine("                                                                                       ");
 
             while (symbol != "Q" && symbol != "R" && symbol != "B" && symbol != "N")
             {
+                Program.PrintRemarks();
+                Console.SetCursorPosition(0, Program.inputRow);
+                Console.WriteLine("                                                                                                                                \n" +
+                    "                                                                                                                                              \n" +
+                    "                                                                                                                                              \n" +
+                    "                                                                                                                                                ");
+                Console.SetCursorPosition(0, Program.inputRow);                
                 Console.Write("Promote your pawn to Q, R, B N.\nEnter symbol: ");
                 symbol = Console.ReadLine();
                 symbol = symbol.ToUpper();
                 
                 if (symbol != "Q" && symbol != "R" && symbol != "B" && symbol != "N")
                 {
-                    Console.WriteLine("Invalid input.");
+                    View.UpdateRemarks(Reference.error[1]);
                 }
             }
+
+            int tilt = (this.Player == 1) ? 1 : -1;
+
+            gameManager.MaterialAdvantage -= (tilt * this.Value);
 
             if (symbol == "Q")
                 gameManager.Board[position.Row][position.Col] = new Queen(this.Player);
@@ -118,6 +131,8 @@ namespace Chess
 
             else
                 gameManager.Board[position.Row][position.Col] = new Knight(this.Player);
+
+            gameManager.MaterialAdvantage += (tilt * gameManager.Board[position.Row][position.Col].Value);
         }
 
         public override void FalsifyHasNotMoved()

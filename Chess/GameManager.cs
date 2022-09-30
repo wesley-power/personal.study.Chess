@@ -12,7 +12,7 @@ namespace Chess
         public King King1 { get; private set; }
         public King King2 { get; private set; }
         public int Turn { get; private set; }
-        public int MaterialAdvantage { get; private set; }
+        public int MaterialAdvantage { get; set; }
         public (int Player, string Move) LastMove { get; private set; }
 
         // Constructor
