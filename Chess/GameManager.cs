@@ -761,7 +761,7 @@ namespace Chess
 
         public void UpdateLastMove(string moveFrom, string moveTo, Piece piece, int player)
         {
-            LastMove = (player, piece.Type + " on " + moveFrom + " to " + moveTo + ".");
+            LastMove = (player, piece.Type + " from " + moveFrom + " to " + moveTo + ".");
         }
     }
 }
