@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Collections.Generic;
 
 namespace Chess
@@ -12,7 +13,7 @@ namespace Chess
         public King King1 { get; private set; }
         public King King2 { get; private set; }
         public int Turn { get; private set; }
-        public int MaterialAdvantage { get; set; }
+        public int MaterialAdvantage { get; private set; }
         public (int Player, string Move) LastMove { get; private set; }
 
         // Constructor
@@ -148,6 +149,11 @@ namespace Chess
 
                 while (pendingReview)
                 {
+                    Console.SetCursorPosition(0, Program.InputRow);
+                    Console.Write("                                                                                 \n" +
+                        "                                                                                           \n" +
+                        "                                                                                             ");
+                    Console.SetCursorPosition(0, Program.InputRow);
                     Console.ForegroundColor = ConsoleColor.Yellow;
                     Console.WriteLine("\nType Y and press enter to approve. N to undo.");
                     Console.ForegroundColor = ConsoleColor.White;
@@ -204,7 +210,7 @@ namespace Chess
 
                             int advantageSwing = (capturedPiece.Player == 1) ? -capturedPiece.Value : capturedPiece.Value;
 
-                            MaterialAdvantage += advantageSwing;
+                            UpdateMaterialAdvantage(1, advantageSwing);
                         }
 
                         if ((newPos.Row == 7 || newPos.Row == 0) && Board[newPos.Row][newPos.Col] != null)
@@ -762,6 +768,11 @@ namespace Chess
         public void UpdateLastMove(string moveFrom, string moveTo, Piece piece, int player)
         {
             LastMove = (player, piece.Type + " from " + moveFrom + " to " + moveTo + ".");
+        }
+
+        public void UpdateMaterialAdvantage(int plusMinus, int valueSwing)
+        {
+            MaterialAdvantage += (plusMinus * valueSwing);
         }
     }
 }

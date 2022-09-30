@@ -8,7 +8,7 @@ namespace Chess
         // Properties
         public static string Remarks { get; private set; }
 
-        public static List<GameManager> PreviousTurns { get; set; }
+        public static List<GameManager> PreviousTurns { get; private set; }
 
         // Methods
         public static void PrintDisplay(GameManager gameManager, bool isReview, int currentTurn)
@@ -304,6 +304,16 @@ namespace Chess
                 else if (command == "2" && currentItem + 1 < PreviousTurns.Count)
                     currentItem++;
             }
+        }
+
+        public static void InitializePreviousTurns()
+        {
+            PreviousTurns = new List<GameManager>();
+        }
+
+        public static void AddToPreviousTurns(GameManager gameManager)
+        {
+            PreviousTurns.Add(gameManager);
         }
     }
 }

@@ -94,18 +94,18 @@ namespace Chess
         public void Promote(GameManager gameManager, (int Row, int Col) position)
         {
             string symbol = "";
-            Console.SetCursorPosition(0, Program.inputRow - 1);
+            Console.SetCursorPosition(0, Program.InputRow - 1);
             Console.WriteLine("                                                                                       ");
 
             while (symbol != "Q" && symbol != "R" && symbol != "B" && symbol != "N")
             {
                 Program.PrintRemarks();
-                Console.SetCursorPosition(0, Program.inputRow);
+                Console.SetCursorPosition(0, Program.InputRow);
                 Console.WriteLine("                                                                                                                                \n" +
                     "                                                                                                                                              \n" +
                     "                                                                                                                                              \n" +
                     "                                                                                                                                                ");
-                Console.SetCursorPosition(0, Program.inputRow);                
+                Console.SetCursorPosition(0, Program.InputRow);                
                 Console.Write("Promote your pawn to Q, R, B N.\nEnter symbol: ");
                 symbol = Console.ReadLine();
                 symbol = symbol.ToUpper();
@@ -116,9 +116,9 @@ namespace Chess
                 }
             }
 
-            int tilt = (this.Player == 1) ? 1 : -1;
+            int advantageSwing = (this.Player == 1) ? this.Value : -this.Value;
 
-            gameManager.MaterialAdvantage -= (tilt * this.Value);
+            gameManager.UpdateMaterialAdvantage(-1, advantageSwing);
 
             if (symbol == "Q")
                 gameManager.Board[position.Row][position.Col] = new Queen(this.Player);
@@ -132,7 +132,11 @@ namespace Chess
             else
                 gameManager.Board[position.Row][position.Col] = new Knight(this.Player);
 
-            gameManager.MaterialAdvantage += (tilt * gameManager.Board[position.Row][position.Col].Value);
+            Piece newPiece = gameManager.Board[position.Row][position.Col];
+
+            advantageSwing = (newPiece.Player == 1) ? newPiece.Value : -newPiece.Value;
+
+            gameManager.UpdateMaterialAdvantage(1, advantageSwing);
         }
 
         public override void FalsifyHasNotMoved()
