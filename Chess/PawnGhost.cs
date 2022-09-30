@@ -30,7 +30,7 @@ namespace Chess
             Value = 0;
         }
 
-        public void UpdateStatus(GameManager gameManager)
+        public void RemovePawnGhost(GameManager gameManager)
         {
             gameManager.PawnGhosts.Remove(this);
 

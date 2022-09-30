@@ -39,6 +39,7 @@ namespace Chess
                 return true;
             }
 
+            View.UpdateRemarks(Reference.error[7]);
             return false;
         }
 

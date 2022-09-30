@@ -30,7 +30,22 @@ namespace Chess
                 (order.First, order.Second) = (gameManager.Turn % 2 == 1) ? (2, 1) : (1, 2);
             }
 
-            Console.WriteLine("\n\n\n");
+            Console.WriteLine("\n\n");
+
+            if (isReview)
+                Console.WriteLine("\t              REVIEW: PREVIOUS TURNS");
+
+            else if (!isReview && !Program.MatchOn)
+                Console.WriteLine("\t                       END");
+
+            else
+                Console.WriteLine("\t                     CURRENT");
+
+            if (gameManager.Turn == 0)
+                Console.WriteLine("\t                      START\n\n");
+
+            else
+                Console.WriteLine("\t                     TURN " + gameManager.Turn + "\n\n");
 
             PrintCapturedDisplay(gameManager, order.First);
 
@@ -38,21 +53,52 @@ namespace Chess
 
             PrintCapturedDisplay(gameManager, order.Second);
 
-            Console.WriteLine("TURN " + gameManager.Turn);
-
-            if (order.Second == 1)
+            if ((isReview && gameManager.Turn > 0) || gameManager.Turn > 1)
             {
-                Console.ForegroundColor = ConsoleColor.Cyan;
-                Console.Write("BLUE");
+                Console.Write("LAST MOVE: ");
+
+                if (gameManager.LastMove.Player == 1)
+                {
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Console.Write("BLUE ");
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Write("RED ");
+                }
+                Console.ForegroundColor = ConsoleColor.White;
+
+                Console.Write(gameManager.LastMove.Move + "\n\n");
             }
             else
-            {
-                Console.ForegroundColor = ConsoleColor.Red;
-                Console.Write("RED");
-            }
+                Console.Write("\n\n");
 
-            Console.ForegroundColor = ConsoleColor.White;
-            Console.Write(" to move!\n\n\n");
+            if (!isReview && Program.MatchOn)
+            {
+                if (gameManager.King1.IsInCheck || gameManager.King2.IsInCheck)
+                {
+                    Console.ForegroundColor = ConsoleColor.Yellow;
+                    Console.Write("Check! ");
+                    Console.ForegroundColor = ConsoleColor.White;
+                }
+
+                if (order.Second == 1)
+                {
+                    Console.ForegroundColor = ConsoleColor.Cyan;
+                    Console.Write("BLUE");
+                }
+                else
+                {
+                    Console.ForegroundColor = ConsoleColor.Red;
+                    Console.Write("RED");
+                }
+
+                Console.ForegroundColor = ConsoleColor.White;
+                Console.Write(" to move!\n\n\n");
+            }
+            else
+                Console.Write("\n\n\n\n");
         }
 
         public static void PrintBoard(GameManager gameManager, bool isReview, int currentTurn)
@@ -143,8 +189,11 @@ namespace Chess
                     if (piece.Player == 2)
                         Console.Write(piece.Symbol + " ");
 
-                Console.Write("\n\n");
                 Console.ForegroundColor = ConsoleColor.White;
+                if (gameManager.MaterialAdvantage > 0)
+                    Console.Write("(+" + gameManager.MaterialAdvantage + ")");
+
+                Console.Write("\n\n");
             }
             else
             {
@@ -156,8 +205,11 @@ namespace Chess
                     if (piece.Player == 1)
                         Console.Write(piece.Symbol + " ");
 
-                Console.Write("\n\n");
                 Console.ForegroundColor = ConsoleColor.White;
+                if (gameManager.MaterialAdvantage < 0)
+                    Console.Write("(+" + Math.Abs(gameManager.MaterialAdvantage) + ")");
+
+                Console.Write("\n\n");
             }
         }
 
@@ -176,15 +228,9 @@ namespace Chess
             Console.ForegroundColor = ConsoleColor.White;
         }
 
-        public static void UpdateRemarks(int top, string remark)
+        public static void UpdateRemarks(string remarks)
         {
-            Console.SetCursorPosition(0, top - 1);
-            Console.Write("                                                                                                                      ");
-            Console.SetCursorPosition(0, top - 1);
-
-            Console.ForegroundColor = ConsoleColor.Yellow;
-            Console.Write("Remarks: " + remark);
-            Console.ForegroundColor = ConsoleColor.White;
+            Remarks = remarks;
         }
 
         public static void PrintTitleScreen()

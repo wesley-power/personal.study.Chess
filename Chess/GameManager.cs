@@ -13,6 +13,7 @@ namespace Chess
         public King King2 { get; private set; }
         public int Turn { get; private set; }
         public int MaterialAdvantage { get; private set; }
+        public (int Player, string Move) LastMove { get; private set; }
 
         // Constructor
         public GameManager()
@@ -128,7 +129,10 @@ namespace Chess
             bool check = IsReachable(king.Player, king.Position);
 
             if (check)
+            {
+                View.UpdateRemarks(Reference.error[8]);
                 success = false;
+            }
             else
                 success = true;
 
@@ -218,7 +222,7 @@ namespace Chess
                             for (int i = 0; i < PawnGhosts.Count; i++)
                             {
                                 if (PawnGhosts[i].Player != player)
-                                    PawnGhosts[i].UpdateStatus(this);
+                                    PawnGhosts[i].RemovePawnGhost(this);
                             }
                         }
                     }
@@ -318,7 +322,7 @@ namespace Chess
                     {
                         if (Board[enemyPos.Row][enemyPos.Col].Type == "Knight" || Board[enemyPos.Row][enemyPos.Col].Type == "Pawn")
                         {
-                            CheckMate();
+                            Program.EndMatch("CHECKMATE", king.Player);
                         }
 
                         bool canBlock = false;
@@ -352,7 +356,7 @@ namespace Chess
                         }
 
                         if (canBlock == false)
-                            CheckMate();
+                            Program.EndMatch("CHECKMATE", king.Player);
                     }
                 }
             }
@@ -380,21 +384,25 @@ namespace Chess
                 }
             }
 
-            StaleMate();
+            Program.EndMatch("STALEMATE", 0);
         }
         
 
         public bool IsUniversalInvalidMove((int Row, int Col) curPos, (int Row, int Col) newPos)
         {
-            // These are separate IF statements because I intend to add error messages
-
             // Requested move has no change.
             if (newPos == curPos)
+            {
+                View.UpdateRemarks(Reference.error[3]);
                 return true;
+            }
 
             // Requested move is out of bounds.
             if (newPos.Row < 0 || newPos.Row > 7 || newPos.Col < 0 || newPos.Col > 7)
+            {
+                View.UpdateRemarks(Reference.error[4]);
                 return true;
+            }
 
             // Requested move on friendly occupied square, except when castling.
             if (Board[newPos.Row][newPos.Col] != null)
@@ -403,7 +411,10 @@ namespace Chess
                     // If not a King and Rook castling
                     if (!(Board[curPos.Row][curPos.Col].Symbol == Reference.pieceSymbol["King"] && Board[curPos.Row][curPos.Col].HasNotMoved
                         && Board[newPos.Row][newPos.Col].Symbol == Reference.pieceSymbol["Rook"] && Board[newPos.Row][newPos.Col].HasNotMoved))
+                    {
+                        View.UpdateRemarks(Reference.error[5]);
                         return true;
+                    }
                 }
 
             return false;
@@ -417,7 +428,10 @@ namespace Chess
             for (int i = 1; i < Math.Abs(newPos.Row - curPos.Row); i++)
                 if (Board[curPos.Row + (i * directionHor)][curPos.Col + (i * directionVer)] != null)
                     if (Board[curPos.Row + (i * directionHor)][curPos.Col + (i * directionVer)].Type != "PawnGhost")
+                    {
+                        View.UpdateRemarks(Reference.error[6]);
                         return true;
+                    }
 
             return false;
         }
@@ -431,7 +445,10 @@ namespace Chess
                 for (int i = 1; i < gap; i++)
                     if (Board[curPos.Row + (i * direction)][curPos.Col] != null)
                         if (Board[curPos.Row + (i * direction)][curPos.Col].Type != "PawnGhost")
+                        {
+                            View.UpdateRemarks(Reference.error[6]);
                             return true;
+                        }
             }
             else
             {
@@ -440,7 +457,10 @@ namespace Chess
                 for (int i = 1; i < gap; i++)
                     if (Board[curPos.Row][curPos.Col + (i * direction)] != null)
                         if (Board[curPos.Row][curPos.Col + (i * direction)].Type != "PawnGhost")
+                        {
+                            View.UpdateRemarks(Reference.error[6]);
                             return true;
+                        }
             }
 
             return false;
@@ -700,6 +720,7 @@ namespace Chess
         {
             this.Turn = other.Turn;
             this.MaterialAdvantage = other.MaterialAdvantage;
+            this.LastMove = other.LastMove;
 
             foreach (var piece in other.CapturedPieces)
                 this.CapturedPieces.Add(piece);
@@ -738,25 +759,9 @@ namespace Chess
                 }
         }
 
-        public void CheckMate()
+        public void UpdateLastMove(string moveFrom, string moveTo, Piece piece, int player)
         {
-            Program.EndMatch("CHECKMATE");
-            Console.WriteLine("\n\nCheckmate!"); // debug
-            Console.ReadLine(); // debug
-        }
-
-        public void StaleMate()
-        {
-            Program.EndMatch("STALEMATE");
-            Console.WriteLine("\n\nStalemate!"); // debug
-            Console.ReadLine(); // debug
-        }
-
-        public void Draw()
-        {
-            Program.EndMatch("DRAW");
-            Console.WriteLine("\n\nDraw!"); // debug
-            Console.ReadLine(); // debug
+            LastMove = (player, piece.Type + " on " + moveFrom + " to " + moveTo + ".");
         }
     }
 }

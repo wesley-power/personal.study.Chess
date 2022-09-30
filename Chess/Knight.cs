@@ -35,6 +35,7 @@ namespace Chess
                 || (Math.Abs(newPos.Col - curPos.Col) == 2 && Math.Abs(newPos.Row - curPos.Row) == 1))
                     return true;
 
+            View.UpdateRemarks(Reference.error[7]);
             return false;
         }
 

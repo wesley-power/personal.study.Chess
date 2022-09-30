@@ -16,6 +16,19 @@ namespace Chess
             { "PawnGhost", " " }
         };
 
+        public static readonly Dictionary<int, string> error = new Dictionary<int, string>
+        {
+            { 1, "Input not valid." },
+            { 2, "That is not one of your pieces!" },
+            { 3, "Your piece is already on that square!" },
+		    { 4, "Input must be a square on the board!" },
+            { 5, "That square is already occupied by one of your pieces!" }, 
+		    { 6, "Another piece is in the way!" },
+            { 7, "That piece cannot move that way!" },
+            { 8, "You cannot put your own king in check!" },
+            { 9, "Draw rejected!" }
+        };
+
         public static void OpenMenu()
         {
             Console.ForegroundColor = ConsoleColor.Yellow;

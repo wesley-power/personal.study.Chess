@@ -53,6 +53,7 @@ namespace Chess
                     if (gameManager.Board[newPos.Row][newPos.Col].Player != this.Player)
                         return true;
 
+            View.UpdateRemarks(Reference.error[7]);
             return false;
         }
 

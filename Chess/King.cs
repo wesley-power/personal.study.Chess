@@ -43,6 +43,11 @@ namespace Chess
             {
                 if (!gameManager.IsReachable(Player, newPos) && !IsKingAdjacent(gameManager, newPos))
                     return true;
+                else
+                {
+                    View.UpdateRemarks(Reference.error[8]);
+                    return false;
+                }
             }
 
             // Check if can castle
@@ -75,6 +80,7 @@ namespace Chess
                                 return true;
                             }
 
+            View.UpdateRemarks(Reference.error[7]);
             return false;
         }
         public override bool CanMove(GameManager gameManager, (int Row, int Col) curPos)
